@@ -21,6 +21,8 @@ Open Claude Code is a Python-based tool that provides a controlled environment f
   - Path validation to prevent access outside project root
   - Dangerous command detection
   - Two-step confirmation for file modifications and deletions
+- **Testing Integration**: Run tests for projects with automatic test framework detection
+- **Dependency Analysis**: Analyze project dependencies and provide information about versions
 
 ## Installation
 
@@ -53,11 +55,57 @@ If no project root is specified, the current working directory will be used.
 
 - `run_command(command: str)` - Execute a shell command
 - `git_operation(operation: str)` - Execute a git operation
+- `git_commit(message: str)` - Create a git commit with all changes
+- `git_search_history(search_term: str, file_path: str)` - Search git commit history
+- `run_tests(test_path: str)` - Run tests for the project
+- `analyze_dependencies()` - Analyze project dependencies
+- `grep_code(pattern: str, file_pattern: str)` - Search for patterns in code
+- `project_summary()` - Generate a summary of the project
 - `write_file(file_path: str, content: str)` - Preview writing to a file
 - `confirm_write_file(file_path: str, content: str)` - Confirm and execute file write
 - `create_directory(dir_path: str)` - Create a directory
 - `delete_path(path_to_delete: str)` - Request to delete a file or directory
 - `confirm_delete_path(path_to_delete: str)` - Confirm and execute deletion
+- `generate_readme()` - Generate a comprehensive README.md
+- `confirm_generate_readme()` - Confirm and create README.md
+- `generate_contributing_guide()` - Generate a CONTRIBUTING.md
+- `confirm_generate_contributing()` - Confirm and create CONTRIBUTING.md
+
+## Testing
+
+You can test this server with both the Claude Desktop app and the MCP Inspector:
+
+### Testing with Claude Desktop
+
+1. Edit your Claude Desktop configuration file:
+   ```
+   # macOS
+   ~/Library/Application Support/Claude/claude_desktop_config.json
+   # Windows
+   %APPDATA%\Claude\claude_desktop_config.json
+   ```
+
+2. Add the server configuration:
+   ```json
+   {
+     "mcpServers": {
+       "open-claude-code": {
+         "command": "python",
+         "args": ["/absolute/path/to/dev_terminal_mcp.py", "/path/to/project/directory"]
+       }
+     }
+   }
+   ```
+
+3. Restart Claude Desktop and interact with the server through the Claude chat interface
+
+### Testing with MCP Inspector
+
+You can use the MCP Inspector to test and debug this server:
+
+```bash
+npx @modelcontextprotocol/inspector python /path/to/dev_terminal_mcp.py /path/to/project/directory
+```
 
 ## Security Considerations
 
@@ -69,7 +117,7 @@ The tool implements several security measures:
 
 ## Dependencies
 
-- MCP (for server implementation)
+- MCP for server implementation
 - GitPython
 - Python standard libraries (os, sys, shutil, subprocess, pathlib)
 
