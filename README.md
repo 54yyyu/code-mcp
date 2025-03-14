@@ -1,10 +1,10 @@
-# DevTerminal MCP
+# Open Claude Code
 
 A secure and professional development terminal for executing commands, managing files, and interacting with Git repositories within defined project boundaries.
 
 ## Overview
 
-DevTerminal MCP is a Python-based tool that provides a controlled environment for executing commands and managing files within a project directory. It enforces security boundaries to prevent access outside the specified project root, making it suitable for integration with AI assistants or other automated systems.
+Open Claude Code is a Python-based tool that provides a controlled environment for executing commands and managing files within a project directory. It enforces security boundaries to prevent access outside the specified project root, making it suitable for integration with AI assistants or other automated systems.
 
 ## Features
 
@@ -69,7 +69,7 @@ The tool implements several security measures:
 
 ## Dependencies
 
-- FastMCP (for server implementation)
+- MCP (for server implementation)
 - GitPython
 - Python standard libraries (os, sys, shutil, subprocess, pathlib)
 
