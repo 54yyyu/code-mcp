@@ -1,0 +1,3 @@
+# Core dependencies
+fastmcp>=0.1.0
+gitpython>=3.1.0
