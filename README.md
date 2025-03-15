@@ -11,7 +11,7 @@ Open Claude Code is a Python-based tool that provides a controlled environment f
 - **Command Execution**: Run shell commands safely within the project directory
 - **File Operations**:
   - Read file contents
-  - Create and write to files with preview and confirmation steps
+  - Edit files with various operations (write, append, insert, replace, delete)
   - List directory contents
   - Create directories
   - Delete files or directories with confirmation
@@ -21,8 +21,6 @@ Open Claude Code is a Python-based tool that provides a controlled environment f
   - Path validation to prevent access outside project root
   - Dangerous command detection
   - Two-step confirmation for file modifications and deletions
-- **Testing Integration**: Run tests for projects with automatic test framework detection
-- **Dependency Analysis**: Analyze project dependencies and provide information about versions
 
 ## Installation
 
@@ -53,23 +51,18 @@ If no project root is specified, the current working directory will be used.
 
 ### Tools
 
-- `run_command(command: str)` - Execute a shell command
-- `git_operation(operation: str)` - Execute a git operation
-- `git_commit(message: str)` - Create a git commit with all changes
-- `git_search_history(search_term: str, file_path: str)` - Search git commit history
-- `run_tests(test_path: str)` - Run tests for the project
-- `analyze_dependencies()` - Analyze project dependencies
-- `grep_code(pattern: str, file_pattern: str)` - Search for patterns in code
-- `project_summary()` - Generate a summary of the project
-- `write_file(file_path: str, content: str)` - Preview writing to a file
-- `confirm_write_file(file_path: str, content: str)` - Confirm and execute file write
-- `create_directory(dir_path: str)` - Create a directory
-- `delete_path(path_to_delete: str)` - Request to delete a file or directory
-- `confirm_delete_path(path_to_delete: str)` - Confirm and execute deletion
-- `generate_readme()` - Generate a comprehensive README.md
-- `confirm_generate_readme()` - Confirm and create README.md
-- `generate_contributing_guide()` - Generate a CONTRIBUTING.md
-- `confirm_generate_contributing()` - Confirm and create CONTRIBUTING.md
+- `run_command(command: str)` - Execute a shell command and return its output
+- `git_operation(operation: str)` - Execute a git operation in the project repository
+- `read_file(file_path: str)` - Read the contents of a file within the project directory
+- `edit_file(file_path: str, operation: str, content: str = "", line_number: int = None, pattern: str = None, start_line: int = None, end_line: int = None, confirm: bool = False)` - Edit a file with various operations:
+  - `write` - Completely replace file contents
+  - `append` - Add content to the end of the file
+  - `insert` - Insert content at a specific line number
+  - `replace` - Replace occurrences of a pattern with new content
+  - `delete` - Delete all occurrences of a pattern
+  - `delete_lines` - Delete specific lines by line numbers
+- `create_directory(dir_path: str)` - Create a directory within the project
+- `delete_path(path_to_delete: str, confirm: bool = False)` - Delete a file or directory within the project
 
 ## Testing
 
@@ -118,7 +111,6 @@ The tool implements several security measures:
 ## Dependencies
 
 - MCP for server implementation
-- GitPython
 - Python standard libraries (os, sys, shutil, subprocess, pathlib)
 
 ## License
