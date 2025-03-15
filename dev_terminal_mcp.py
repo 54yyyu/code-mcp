@@ -185,12 +185,13 @@ async def run_command(command: str, ctx: Context) -> str:
 
 # Tool for git operations
 @mcp.tool()
-async def git_operation(operation: str, ctx: Context) -> str:
+async def git_operation(operation: str, ctx: Context, confirm: bool = False) -> str:
     """
     Execute a git operation in the project repository.
     
     Args:
         operation: The git operation to perform (e.g., "status", "log", "branch")
+        confirm: Set to true to execute operations that require confirmation (like push)
     """
     try:
         # Check if the project directory is a git repository
@@ -198,10 +199,24 @@ async def git_operation(operation: str, ctx: Context) -> str:
         if not (repo_path / '.git').exists():
             return "Error: The project directory is not a git repository"
         
-        # Security check - reject dangerous git operations
-        dangerous_operations = ["push", "reset --hard", "clean -f"]
-        if any(op in operation for op in dangerous_operations):
+        # Highly dangerous operations that are always blocked
+        highly_dangerous_operations = ["reset --hard", "clean -f"]
+        if any(op in operation for op in highly_dangerous_operations):
             return f"Error: Potentially destructive git operation not allowed: {operation}"
+        
+        # Operations that require confirmation (like push)
+        warning_operations = ["push"]
+        requires_confirmation = any(op in operation for op in warning_operations)
+        
+        if requires_confirmation and not confirm:
+            return f"""⚠️ Warning: The git operation '{operation}' can affect remote repositories and should be used with caution.
+            
+This operation could:
+- Modify shared repositories that other developers are using
+- Make local commits visible to others
+- Potentially overwrite others' work if force-pushing
+
+To confirm and execute this operation, set confirm=True"""
         
         # Log the operation
         ctx.info(f"Executing git operation: {operation}")
@@ -423,6 +438,338 @@ async def edit_file(file_path: str, operation: str, ctx: Context, content: str =
         return f"Error: Permission denied when editing file: {path}"
     except Exception as e:
         return f"Error editing file: {str(e)}"
+
+# Enhanced file editing tool with improved pattern matching and function-level operations
+@mcp.tool()
+async def smart_edit(file_path: str, ctx: Context, operation: str = "preview", 
+                     function_name: str = None, pattern: str = None, new_content: str = None,
+                     regex_mode: bool = False, context_lines: int = 3, confirm: bool = False) -> str:
+    """
+    Enhanced file editing with smart pattern matching and function-level operations.
+    
+    Args:
+        file_path: Path to the file (relative to project root or absolute)
+        operation: Type of edit ('preview', 'update_function', 'replace', 'delete', 'append')
+        function_name: Target function name for function-level operations
+        pattern: Pattern to find (with flexible whitespace matching)
+        new_content: New content to insert/replace
+        regex_mode: Enable regex pattern matching
+        context_lines: Number of context lines to show in previews
+        confirm: Set to true to execute the edit, false to preview only
+    """
+    path = Path(file_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access file outside project directory: {path}"
+    
+    if not path.exists():
+        return f"Error: File does not exist: {path}"
+    
+    if path.is_dir():
+        return f"Error: Path is a directory, not a file: {path}"
+    
+    try:
+        # Read the file content
+        with open(path, 'r', encoding='utf-8') as f:
+            content = f.read()
+            lines = content.splitlines()
+        
+        # Function to find a specific Python function in the file
+        def find_function(func_name):
+            if not func_name:
+                return None, None
+            
+            pattern = fr"def\s+{func_name}\s*\("
+            func_start = None
+            func_end = None
+            
+            # Find the start of the function
+            for i, line in enumerate(lines):
+                if re.search(pattern, line):
+                    func_start = i
+                    break
+            
+            if func_start is None:
+                return None, None
+            
+            # Find the end of the function by tracking indentation
+            base_indent = len(lines[func_start]) - len(lines[func_start].lstrip())
+            func_end = func_start
+            
+            for i in range(func_start + 1, len(lines)):
+                # Skip empty lines
+                if not lines[i].strip():
+                    func_end = i
+                    continue
+                
+                # If we find a line with same or less indentation, we've left the function
+                if len(lines[i]) - len(lines[i].lstrip()) <= base_indent:
+                    break
+                
+                func_end = i
+            
+            return func_start, func_end
+        
+        # Function to find a pattern with flexible whitespace
+        def find_pattern(pattern_str, content_str, is_regex=False):
+            if not pattern_str:
+                return None
+            
+            if is_regex:
+                try:
+                    matches = list(re.finditer(pattern_str, content_str))
+                    return matches
+                except re.error as e:
+                    return f"Invalid regex pattern: {str(e)}"
+            else:
+                # Make pattern more flexible with whitespace
+                flexible_pattern = re.sub(r'\s+', r'\\s+', re.escape(pattern_str))
+                try:
+                    matches = list(re.finditer(flexible_pattern, content_str))
+                    return matches
+                except re.error as e:
+                    return f"Error processing pattern: {str(e)}"
+        
+        # Preview mode - analyze the file
+        if operation == "preview":
+            info = []
+            
+            # Count lines, functions, classes
+            info.append(f"File: {path}")
+            info.append(f"Size: {path.stat().st_size} bytes")
+            info.append(f"Lines: {len(lines)}")
+            
+            # Count Python functions and classes if it's a Python file
+            if path.suffix.lower() == '.py':
+                func_count = sum(1 for line in lines if re.match(r'^\s*def\s+\w+\s*\(', line))
+                class_count = sum(1 for line in lines if re.match(r'^\s*class\s+\w+', line))
+                info.append(f"Functions: {func_count}")
+                info.append(f"Classes: {class_count}")
+            
+            # If function name is provided, try to locate it
+            if function_name:
+                func_start, func_end = find_function(function_name)
+                if func_start is not None:
+                    func_content = '\n'.join(lines[func_start:func_end+1])
+                    info.append(f"\nFunction '{function_name}' found at lines {func_start+1}-{func_end+1}:")
+                    info.append(f"```python\n{func_content}\n```")
+                else:
+                    info.append(f"\nFunction '{function_name}' not found in the file.")
+            
+            # If pattern is provided, try to locate it
+            if pattern:
+                matches = find_pattern(pattern, content, regex_mode)
+                if isinstance(matches, str):  # Error occurred
+                    info.append(f"\nError finding pattern: {matches}")
+                elif matches:
+                    info.append(f"\nPattern '{pattern}' found {len(matches)} times:")
+                    for i, match in enumerate(matches[:3]):  # Show first 3 matches
+                        start_pos = match.start()
+                        end_pos = match.end()
+                        
+                        # Find the line number for this match
+                        line_no = content[:start_pos].count('\n') + 1
+                        line_start = content.rfind('\n', 0, start_pos) + 1
+                        line_end = content.find('\n', start_pos)
+                        if line_end == -1:
+                            line_end = len(content)
+                        
+                        line_content = content[line_start:line_end]
+                        match_excerpt = content[max(0, start_pos-20):min(len(content), end_pos+20)]
+                        
+                        info.append(f"Match {i+1} at line {line_no}, position {start_pos}:")
+                        info.append(f"```\n...{match_excerpt}...\n```")
+                    
+                    if len(matches) > 3:
+                        info.append(f"(and {len(matches) - 3} more matches)")
+                else:
+                    info.append(f"\nPattern '{pattern}' not found in the file.")
+            
+            return "\n".join(info)
+        
+        # Function-level operations
+        elif operation == "update_function":
+            if not function_name:
+                return "Error: Function name is required for update_function operation"
+                
+            if not new_content:
+                return "Error: New content is required for update_function operation"
+            
+            func_start, func_end = find_function(function_name)
+            if func_start is None:
+                return f"Error: Function '{function_name}' not found in the file"
+            
+            old_func_content = '\n'.join(lines[func_start:func_end+1])
+            
+            # Preview or execute based on confirm flag
+            if not confirm:
+                preview = f"Will replace function '{function_name}' at lines {func_start+1}-{func_end+1}:"
+                
+                # Generate diff
+                diff = difflib.unified_diff(
+                    old_func_content.splitlines(),
+                    new_content.splitlines(),
+                    fromfile=f"{function_name} (before)",
+                    tofile=f"{function_name} (after)",
+                    lineterm='',
+                    n=context_lines
+                )
+                diff_text = '\n'.join(diff)
+                
+                return f"{preview}\n\n```diff\n{diff_text}\n```\n\nTo apply these changes, set confirm=True"
+            
+            # Confirm and execute the update
+            new_lines = lines.copy()
+            new_lines[func_start:func_end+1] = new_content.splitlines()
+            
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write('\n'.join(new_lines))
+            
+            ctx.info(f"Successfully updated function '{function_name}' in {path}")
+            return f"Successfully updated function '{function_name}' in {path}"
+        
+        # Smart pattern replacement with flexible whitespace
+        elif operation == "replace":
+            if not pattern:
+                return "Error: Pattern is required for replace operation"
+                
+            if new_content is None:  # Allow empty string replacement
+                return "Error: New content parameter is required for replace operation"
+            
+            matches = find_pattern(pattern, content, regex_mode)
+            
+            if isinstance(matches, str):  # Error occurred
+                return f"Error finding pattern: {matches}"
+                
+            if not matches:
+                # Try to suggest similar patterns that might match
+                words = re.findall(r'\w+', pattern)
+                similar_lines = []
+                
+                for i, line in enumerate(lines):
+                    for word in words:
+                        if len(word) > 3 and word.lower() in line.lower():
+                            similar_lines.append((i, line))
+                            break
+                
+                suggestion = "\n\nPossible similar lines that might contain what you're looking for:"
+                for i, line in similar_lines[:5]:
+                    suggestion += f"\nLine {i+1}: {line}"
+                
+                return f"Pattern '{pattern}' not found in the file.{suggestion if similar_lines else ''}"
+            
+            new_content_str = content
+            replacements = 0
+            
+            # Preview or execute based on confirm flag
+            if confirm:
+                if regex_mode:
+                    new_content_str = re.sub(pattern, new_content, content)
+                    replacements = abs(len(new_content_str) - len(content))
+                else:
+                    flexible_pattern = re.sub(r'\s+', r'\\s+', re.escape(pattern))
+                    new_content_str = re.sub(flexible_pattern, new_content, content)
+                    replacements = abs(len(new_content_str) - len(content))
+                
+                with open(path, 'w', encoding='utf-8') as f:
+                    f.write(new_content_str)
+                
+                ctx.info(f"Successfully replaced pattern in {path}")
+                return f"Successfully replaced pattern in {path} ({len(matches)} matches)"
+            else:
+                preview = f"Will replace pattern '{pattern}' ({len(matches)} matches):"
+                
+                # Generate a sample of what will change
+                match_sample = matches[0]
+                start_pos = match_sample.start()
+                
+                # Get surrounding lines for context
+                line_no = content[:start_pos].count('\n') + 1
+                lines_before = content[:start_pos].splitlines()[-min(context_lines, line_no):]
+                
+                end_pos = match_sample.end()
+                lines_after = content[end_pos:].splitlines()[:context_lines]
+                
+                matched_text = content[start_pos:end_pos]
+                
+                preview_text = "\n".join(lines_before) + f"\n[MATCH: {matched_text}]\n" + "\n".join(lines_after)
+                replacement_preview = "\n".join(lines_before) + f"\n[REPLACEMENT: {new_content}]\n" + "\n".join(lines_after)
+                
+                return f"{preview}\n\nBefore (first match with context):\n```\n{preview_text}\n```\n\nAfter:\n```\n{replacement_preview}\n```\n\nTo apply these changes to all {len(matches)} matches, set confirm=True"
+        
+        # Other operations
+        elif operation == "append":
+            if new_content is None:
+                return "Error: New content is required for append operation"
+            
+            if not confirm:
+                return f"Will append content to the end of {path}:\n\n```\n{new_content}\n```\n\nTo apply these changes, set confirm=True"
+            
+            with open(path, 'a', encoding='utf-8') as f:
+                f.write('\n' + new_content)
+            
+            ctx.info(f"Successfully appended content to {path}")
+            return f"Successfully appended content to {path}"
+        
+        elif operation == "delete":
+            if not pattern:
+                return "Error: Pattern is required for delete operation"
+            
+            matches = find_pattern(pattern, content, regex_mode)
+            
+            if isinstance(matches, str):  # Error occurred
+                return f"Error finding pattern: {matches}"
+                
+            if not matches:
+                return f"Pattern '{pattern}' not found in the file."
+            
+            if not confirm:
+                preview = f"Will delete pattern '{pattern}' ({len(matches)} matches):"
+                
+                # Generate diff preview
+                if regex_mode:
+                    new_content_str = re.sub(pattern, '', content)
+                else:
+                    flexible_pattern = re.sub(r'\s+', r'\\s+', re.escape(pattern))
+                    new_content_str = re.sub(flexible_pattern, '', content)
+                
+                diff = difflib.unified_diff(
+                    content.splitlines(),
+                    new_content_str.splitlines(),
+                    fromfile=f"{path} (before)",
+                    tofile=f"{path} (after)",
+                    lineterm='',
+                    n=context_lines
+                )
+                diff_text = '\n'.join(diff)
+                
+                return f"{preview}\n\n```diff\n{diff_text}\n```\n\nTo apply these changes, set confirm=True"
+            
+            # Execute the deletion
+            if regex_mode:
+                new_content_str = re.sub(pattern, '', content)
+            else:
+                flexible_pattern = re.sub(r'\s+', r'\\s+', re.escape(pattern))
+                new_content_str = re.sub(flexible_pattern, '', content)
+            
+            with open(path, 'w', encoding='utf-8') as f:
+                f.write(new_content_str)
+            
+            ctx.info(f"Successfully deleted pattern in {path}")
+            return f"Successfully deleted pattern in {path} ({len(matches)} matches)"
+        
+        else:
+            return f"Error: Unsupported operation '{operation}'. Must be one of: preview, update_function, replace, delete, append"
+    
+    except UnicodeDecodeError:
+        return f"Error: File appears to be binary and cannot be edited as text: {path}"
+    except PermissionError:
+        return f"Error: Permission denied when accessing file: {path}"
+    except Exception as e:
+        return f"Error processing file: {str(e)}"
 
 # Tool for creating directories
 @mcp.tool()

@@ -12,10 +12,11 @@ Open Claude Code is a Python-based tool that provides a controlled environment f
 - **File Operations**:
   - Read file contents
   - Edit files with various operations (write, append, insert, replace, delete)
+  - Enhanced smart editing with function-level operations and improved pattern matching
   - List directory contents
   - Create directories
   - Delete files or directories with confirmation
-- **Git Integration**: Execute git operations within the repository
+- **Git Integration**: Execute git operations within the repository with confirmation for sensitive operations
 - **Project Navigation**: Get a tree-like view of the project structure
 - **Security Measures**:
   - Path validation to prevent access outside project root
@@ -52,7 +53,7 @@ If no project root is specified, the current working directory will be used.
 ### Tools
 
 - `run_command(command: str)` - Execute a shell command and return its output
-- `git_operation(operation: str)` - Execute a git operation in the project repository
+- `git_operation(operation: str, confirm: bool = False)` - Execute a git operation in the project repository with confirmation for sensitive operations
 - `read_file(file_path: str)` - Read the contents of a file within the project directory
 - `edit_file(file_path: str, operation: str, content: str = "", line_number: int = None, pattern: str = None, start_line: int = None, end_line: int = None, confirm: bool = False)` - Edit a file with various operations:
   - `write` - Completely replace file contents
@@ -63,6 +64,12 @@ If no project root is specified, the current working directory will be used.
   - `delete_lines` - Delete specific lines by line numbers
 - `create_directory(dir_path: str)` - Create a directory within the project
 - `delete_path(path_to_delete: str, confirm: bool = False)` - Delete a file or directory within the project
+- `smart_edit(file_path: str, operation: str = "preview", function_name: str = None, pattern: str = None, new_content: str = None, regex_mode: bool = False, context_lines: int = 3, confirm: bool = False)` - Enhanced file editing with:
+  - Function-level operations for updating entire functions at once
+  - Smart pattern matching with flexible whitespace handling
+  - Regex pattern support for advanced matching
+  - Better context in previews and error messages
+  - Helpful suggestions when patterns aren't found
 
 ## Testing
 
@@ -105,7 +112,7 @@ npx @modelcontextprotocol/inspector python /path/to/dev_terminal_mcp.py /path/to
 The tool implements several security measures:
 - Path validation to ensure operations only occur within the project directory
 - Rejection of shell commands with dangerous operators (`;`, `&&`, `||`, etc.)
-- Rejection of potentially destructive git operations
+- Different security levels for git operations: some blocked entirely, others requiring confirmation
 - Two-step confirmation process for file writes and deletions
 
 ## Dependencies
