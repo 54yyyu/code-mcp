@@ -72,6 +72,7 @@ check_claude_config() {
   
   # Check common locations for Claude Desktop config
   for config_path in \
+    "$HOME/Library/Application Support/Claude/claude_desktop_config.json" \
     "$HOME/Library/Application Support/Claude/config/claude_desktop_config.json" \
     "$HOME/.config/Claude/config/claude_desktop_config.json" \
     "$APPDATA/Claude/config/claude_desktop_config.json"

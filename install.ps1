@@ -123,6 +123,7 @@ if (Test-Command code-mcp) {
     Write-Host "   code-mcp-setup C:\path\to\your\project"
     Write-Host ""
     Write-Host "2. Or manually add to Claude Desktop config (claude_desktop_config.json):"
+    Write-Host "   Typically found at: %APPDATA%\Claude\claude_desktop_config.json"
     Write-Host '   "mcpServers": {'
     Write-Host '     "code": {'
     Write-Host '       "command": "code-mcp",'

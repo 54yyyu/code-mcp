@@ -173,6 +173,7 @@ if command_exists code-mcp; then
   echo "   code-mcp-setup /path/to/your/project"
   echo ""
   echo "2. Or manually add to Claude Desktop config (claude_desktop_config.json):"
+  echo "   Typically found at: ~/Library/Application Support/Claude/claude_desktop_config.json"
   echo '   "mcpServers": {'
   echo '     "code": {'
   echo '       "command": "code-mcp",'
