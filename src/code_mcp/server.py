@@ -111,8 +111,8 @@ def get_file(file_path: str) -> str:
     return safe_read_file(path)
 
 # Resource for listing directory contents
-@mcp.resource("dir://{dir_path}?max_depth={max_depth}")
-def list_directory(ctx: Context, dir_path: str = "", max_depth: int = 10) -> str:
+@mcp.resource("dir://{dir_path}")
+def list_directory(ctx: Context, dir_path: str = "") -> str:
     """
     List the contents of a directory within the project in a tree-like format.
     
@@ -120,6 +120,8 @@ def list_directory(ctx: Context, dir_path: str = "", max_depth: int = 10) -> str
         dir_path: Path to the directory (relative to project root or absolute, empty for project root)
         max_depth: Maximum depth for the directory tree (default: 3)
     """
+    max_depth = 10  # Set a default max depth for the tree
+    
     path = Path(dir_path)
     if not path.is_absolute():
         path = PROJECT_ROOT / path
