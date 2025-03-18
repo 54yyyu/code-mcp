@@ -1,129 +1,130 @@
-# Open Claude Code
+# Code-MCP: Terminal and Code Integration for Claude AI
 
-A secure and professional development terminal for executing commands, managing files, and interacting with Git repositories within defined project boundaries.
-
-## Overview
-
-Open Claude Code is a Python-based tool that provides a controlled environment for executing commands and managing files within a project directory. It enforces security boundaries to prevent access outside the specified project root, making it suitable for integration with AI assistants or other automated systems.
+Code-MCP connects Claude AI to your development environment through the Model Context Protocol (MCP), enabling terminal commands and file operations through the AI interface.
 
 ## Features
 
-- **Command Execution**: Run shell commands safely within the project directory
-- **File Operations**:
-  - Read file contents
-  - Edit files with various operations (write, append, insert, replace, delete)
-  - Enhanced smart editing with function-level operations and improved pattern matching
-  - List directory contents
-  - Create directories
-  - Delete files or directories with confirmation
-- **Git Integration**: Execute git operations within the repository with confirmation for sensitive operations
-- **Project Navigation**: Get a tree-like view of the project structure
-- **Security Measures**:
-  - Path validation to prevent access outside project root
-  - Dangerous command detection
-  - Two-step confirmation for file modifications and deletions
+- **Terminal Access**: Run shell commands in your project directory directly from Claude
+- **File Operations**: Create, read, update, and delete files and directories
+- **Git Integration**: Special handling for git commands with safety confirmations
+- **Smart Editing**: Enhanced editing capabilities for code files
+- **Code Analysis**: Advanced pattern matching and function-level operations
+- **Productivity Tools**: Operate on your codebase with natural language instructions
 
-## Installation
+## Quick Installation
+
+### macOS / Linux
+
+```bash
+# Install with a single command (includes uv installation if needed)
+curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/main/install.sh | sh
+```
+
+### Windows
+
+```powershell
+# Download and run the installer
+powershell -c "Invoke-WebRequest -Uri https://raw.githubusercontent.com/54yyyu/code-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1"
+```
+
+### Manual Installation
+
+```bash
+# Install with pip
+pip install git+https://github.com/54yyyu/code-mcp.git
+
+# Or better, install with uv
+uv pip install git+https://github.com/54yyyu/code-mcp.git
+```
+
+### For Developers
+
+If you're developing Code-MCP, clone the repository and install in development mode:
 
 ```bash
 # Clone the repository
-git clone https://github.com/54yyyu/open-claude-code.git
-cd open-claude-code
+git clone https://github.com/54yyyu/code-mcp.git
+cd code-mcp
 
-# Install dependencies
-pip install -r requirements.txt
+# Install in development mode with pip
+pip install -e .
+
+# Or with uv (recommended)
+uv pip install -e .
 ```
 
 ## Usage
 
-```bash
-python dev_terminal_mcp.py [project_root_directory]
+### Claude Desktop Integration
+
+1. Automatic setup:
+   ```bash
+   code-mcp-setup /path/to/your/project
+   ```
+
+2. Or manually edit Claude Desktop configuration:
+   - Go to Claude > Settings > Developer > Edit Config
+   - Add the following to your `claude_desktop_config.json`:
+
+```json
+{
+    "mcpServers": {
+        "code": {
+            "command": "code-mcp",
+            "args": [
+                "/path/to/your/project"
+            ]
+        }
+    }
+}
 ```
 
-If no project root is specified, the current working directory will be used.
+3. Save the file and restart Claude
 
-## API
+## Features
 
-### Resources
+### Terminal Operations
 
-- `file://{file_path}` - Get the contents of a file
-- `dir://{dir_path}` - List the contents of a directory
-- `project://structure` - Get a tree-like view of the project structure
+- Execute terminal commands with `run_command()`
+- Perform git operations with `git_operation()`
 
-### Tools
+### File Operations
 
-- `run_command(command: str)` - Execute a shell command and return its output
-- `git_operation(operation: str, confirm: bool = False)` - Execute a git operation in the project repository with confirmation for sensitive operations
-- `read_file(file_path: str)` - Read the contents of a file within the project directory
-- `edit_file(file_path: str, operation: str, content: str = "", line_number: int = None, pattern: str = None, start_line: int = None, end_line: int = None, confirm: bool = False)` - Edit a file with various operations:
-  - `write` - Completely replace file contents
-  - `append` - Add content to the end of the file
-  - `insert` - Insert content at a specific line number
-  - `replace` - Replace occurrences of a pattern with new content
-  - `delete` - Delete all occurrences of a pattern
-  - `delete_lines` - Delete specific lines by line numbers
-- `create_directory(dir_path: str)` - Create a directory within the project
-- `delete_path(path_to_delete: str, confirm: bool = False)` - Delete a file or directory within the project
-- `smart_edit(file_path: str, operation: str = "preview", function_name: str = None, pattern: str = None, new_content: str = None, regex_mode: bool = False, context_lines: int = 3, confirm: bool = False)` - Enhanced file editing with:
-  - Function-level operations for updating entire functions at once
-  - Smart pattern matching with flexible whitespace handling
-  - Regex pattern support for advanced matching
-  - Better context in previews and error messages
-  - Helpful suggestions when patterns aren't found
+- Read files with `read_file()`
+- Edit files with `edit_file()` and `smart_edit()`
+- Create and delete directories with `create_directory()` and `delete_path()`
+- List directory contents with `list_directory()`
 
-## Testing
+### Advanced Code Editing
 
-You can test this server with both the Claude Desktop app and the MCP Inspector:
+- Flexible pattern matching with whitespace normalization
+- Function-level editing with automatic indentation handling
+- Batch operations across multiple files with `edit_block()`
+- Support for search/replace blocks and unified diff formats
 
-### Testing with Claude Desktop
+## Examples
 
-1. Edit your Claude Desktop configuration file:
-   ```
-   # macOS
-   ~/Library/Application Support/Claude/claude_desktop_config.json
-   # Windows
-   %APPDATA%\Claude\claude_desktop_config.json
-   ```
+Ask Claude:
 
-2. Add the server configuration:
-   ```json
-   {
-     "mcpServers": {
-       "open-claude-code": {
-         "command": "python",
-         "args": ["/absolute/path/to/dev_terminal_mcp.py", "/path/to/project/directory"]
-       }
-     }
-   }
-   ```
+- "List all the files in the current directory"
+- "Show me the content of the README.md file"
+- "Create a new file called example.py with a simple hello world program"
+- "Run git status and show me what files have changed"
+- "Make these changes to main.py: replace X with Y"
+- "Update the process_data function in data_utils.py to handle null values"
 
-3. Restart Claude Desktop and interact with the server through the Claude chat interface
+## Safety Features
 
-### Testing with MCP Inspector
+- Confirmation required for destructive operations (delete, overwrite)
+- Path safety to prevent operations outside project directory
+- Special confirmation for potentially dangerous git commands
 
-You can use the MCP Inspector to test and debug this server:
+## Requirements
 
-```bash
-npx @modelcontextprotocol/inspector python /path/to/dev_terminal_mcp.py /path/to/project/directory
-```
-
-## Security Considerations
-
-The tool implements several security measures:
-- Path validation to ensure operations only occur within the project directory
-- Rejection of shell commands with dangerous operators (`;`, `&&`, `||`, etc.)
-- Different security levels for git operations: some blocked entirely, others requiring confirmation
-- Two-step confirmation process for file writes and deletions
-
-## Dependencies
-
-- MCP for server implementation
-- Python standard libraries (os, sys, shutil, subprocess, pathlib)
+- Python 3.10 or newer
+- Claude Desktop or API access
+- Git (optional, for git operations)
 
 ## License
 
-[MIT License](LICENSE)
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project is licensed under the MIT License - see the LICENSE file for details.

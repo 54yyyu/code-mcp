@@ -1,0 +1,33 @@
+[project]
+name = "code-mcp"
+version = "0.1.0"
+description = "Terminal and code integration through the Model Context Protocol"
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+    {name = "54yyyu", email = "you@example.com"}
+]
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "mcp[cli]>=1.3.0",
+]
+
+[project.scripts]
+code-mcp = "code_mcp.server:main"
+code-mcp-setup = "code_mcp.setup_helper:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[project.urls]
+"Homepage" = "https://github.com/54yyyu/code-mcp"
+"Bug Tracker" = "https://github.com/54yyyu/code-mcp/issues"
