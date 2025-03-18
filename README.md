@@ -59,7 +59,11 @@ uv pip install -e .
 
 1. Automatic setup:
    ```bash
+   # With a specific project path
    code-mcp-setup /path/to/your/project
+   
+   # Or run without arguments to use the current directory
+   code-mcp-setup
    ```
 
 2. Or manually edit Claude Desktop configuration:
@@ -80,6 +84,20 @@ uv pip install -e .
 ```
 
 3. Save the file and restart Claude
+
+### Updating Existing Configurations
+
+If you previously installed code-mcp but it requires an absolute path in your configuration, 
+you can use the setup helper with the `--fix-path` flag to update your configuration:
+
+```bash
+code-mcp-setup --fix-path
+```
+
+This will find your Claude Desktop configuration and update the command to use just `code-mcp` 
+instead of the full path, allowing it to work as long as code-mcp is in your PATH.
+
+Note: All new installations automatically use the PATH-based approach.
 
 ## Features
 

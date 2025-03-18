@@ -159,34 +159,77 @@ else
   error "Neither uv nor pip found. Please install pip or uv and try again."
 fi
 
+# Find the script path
+find_script_path() {
+  # Try to find where code-mcp was installed
+  for DIR in "$HOME/.local/bin" "$HOME/Library/Python/"*"/bin" "$HOME/.astral/uv/venvs/"*"/bin" "/usr/local/bin" "$HOME/mambaforge/bin"; do
+    # Expand glob patterns
+    for GLOB in $DIR; do
+      if [ -f "$GLOB/code-mcp" ]; then
+        echo "$GLOB"
+        return 0
+      fi
+    done
+  done
+  return 1
+}
+
 # Verify installation
 if command_exists code-mcp; then
   VERSION=$(code-mcp --version 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "Unknown")
   success "Installation successful! Code-MCP version $VERSION"
-  
-  echo ""
-  echo -e "${BLUE}=== Getting Started ===${NC}"
-  echo ""
-  echo "To set up Claude Desktop integration:"
-  echo ""
-  echo "1. Run the setup helper:"
-  echo "   code-mcp-setup /path/to/your/project"
-  echo ""
-  echo "2. Or manually add to Claude Desktop config (claude_desktop_config.json):"
-  echo "   Typically found at: ~/Library/Application Support/Claude/claude_desktop_config.json"
-  echo '   "mcpServers": {'
-  echo '     "code": {'
-  echo '       "command": "code-mcp",'
-  echo '       "args": ['
-  echo '         "/path/to/your/project"'
-  echo '       ]'
-  echo '     }'
-  echo '   }'
-  echo ""
-  echo "3. Restart Claude Desktop"
 else
-  error "Installation failed. Try installing manually: pip install git+https://github.com/54yyyu/code-mcp.git"
+  # Try to find the script and add it to PATH
+  SCRIPT_PATH=$(find_script_path)
+  
+  if [ -n "$SCRIPT_PATH" ]; then
+    info "Found code-mcp at $SCRIPT_PATH"
+    
+    # Add to PATH for current session
+    export PATH="$SCRIPT_PATH:$PATH"
+    
+    # Update shell config files
+    if [ -f "$HOME/.bashrc" ]; then
+      if ! grep -q "export PATH=\"$SCRIPT_PATH:\\\$PATH\"" "$HOME/.bashrc"; then
+        echo "export PATH=\"$SCRIPT_PATH:\$PATH\"" >> "$HOME/.bashrc"
+        info "Added $SCRIPT_PATH to PATH in .bashrc"
+      fi
+    fi
+    
+    if [ -f "$HOME/.zshrc" ]; then
+      if ! grep -q "export PATH=\"$SCRIPT_PATH:\\\$PATH\"" "$HOME/.zshrc"; then
+        echo "export PATH=\"$SCRIPT_PATH:\$PATH\"" >> "$HOME/.zshrc"
+        info "Added $SCRIPT_PATH to PATH in .zshrc"
+      fi
+    fi
+    
+    warn "Please restart your terminal or run 'source ~/.bashrc' (or .zshrc) to update your PATH"
+    success "Installation successful! You will need to refresh your terminal environment."
+  else
+    error "Installation failed. Try installing manually: pip install git+https://github.com/54yyyu/code-mcp.git"
+  fi
 fi
+
+echo ""
+echo -e "${BLUE}=== Getting Started ===${NC}"
+echo ""
+echo "To set up Claude Desktop integration:"
+echo ""
+echo "1. Run the setup helper:"
+echo "   code-mcp-setup /path/to/your/project"
+echo ""
+echo "2. Or manually add to Claude Desktop config (claude_desktop_config.json):"
+echo "   Typically found at: ~/Library/Application Support/Claude/claude_desktop_config.json"
+echo '   "mcpServers": {'
+echo '     "code": {'
+echo '       "command": "code-mcp",'
+echo '       "args": ['
+echo '         "/path/to/your/project"'
+echo '       ]'
+echo '     }'
+echo '   }'
+echo ""
+echo "3. Restart Claude Desktop"
 
 echo ""
 success "Installation complete!"

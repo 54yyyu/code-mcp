@@ -22,18 +22,18 @@ def find_claude_config():
     
     # macOS
     if sys.platform == 'darwin':
-        possible_locations.append(Path.home() / "Library/Application Support/Claude/config/claude_desktop_config.json")
+        possible_locations.append(Path.home() / "Library/Application Support/Claude/claude_desktop_config.json")
     
     # Windows
     elif sys.platform == 'win32':
         app_data = os.environ.get('APPDATA', '')
         if app_data:
-            possible_locations.append(Path(app_data) / "Claude/config/claude_desktop_config.json")
+            possible_locations.append(Path(app_data) / "Claude/claude_desktop_config.json")
     
     # Linux
     else:
         config_home = os.environ.get('XDG_CONFIG_HOME', Path.home() / '.config')
-        possible_locations.append(Path(config_home) / "Claude/config/claude_desktop_config.json")
+        possible_locations.append(Path(config_home) / "Claude/claude_desktop_config.json")
     
     # Check all possible locations
     for location in possible_locations:
@@ -44,25 +44,37 @@ def find_claude_config():
 
 def get_code_mcp_path():
     """Get the path to the code-mcp executable"""
-    try:
-        # Try to find the executable in the PATH
-        code_mcp_path = shutil.which("code-mcp")
-        if code_mcp_path:
-            return code_mcp_path
-    except Exception:
-        pass
-    
-    # If not found, assume it's in the same package
+    # Always use just the command name to ensure PATH lookup
     return "code-mcp"
 
-def setup_claude_config(project_path=None):
+def fix_path_in_config(config):
+    """Fix absolute paths in the config to use PATH-based commands"""
+    updated = False
+    
+    if 'mcpServers' in config and 'code' in config['mcpServers']:
+        code_server = config['mcpServers']['code']
+        if 'command' in code_server:
+            old_command = code_server['command']
+            
+            # If it's an absolute path to code-mcp, replace with just the command name
+            if os.path.basename(old_command) == 'code-mcp':
+                code_server['command'] = 'code-mcp'
+                print(f"Updated command from '{old_command}' to 'code-mcp'")
+                updated = True
+    
+    return updated
+
+def setup_claude_config(project_path=None, fix_path_only=False):
     """Set up the Claude Desktop configuration for Code-MCP"""
     config_file = find_claude_config()
     
     if not config_file:
         print("Could not find Claude Desktop configuration file.")
-        print("Please manually add the configuration to your Claude Desktop config.")
-        print_manual_instructions(project_path)
+        if not fix_path_only:
+            print("Please manually add the configuration to your Claude Desktop config.")
+            print_manual_instructions(project_path)
+        else:
+            print("No configuration found to fix.")
         return False
     
     print(f"Found Claude Desktop configuration at: {config_file}")
@@ -73,7 +85,33 @@ def setup_claude_config(project_path=None):
             config = json.load(f)
     except (json.JSONDecodeError, FileNotFoundError):
         # If the file doesn't exist or is not valid JSON, start with an empty config
+        if fix_path_only:
+            print("Error reading configuration file.")
+            return False
         config = {}
+    
+    # Always fix paths in the config, even in normal setup mode
+    if 'mcpServers' in config and 'code' in config['mcpServers']:
+        fixed = fix_path_in_config(config)
+        if fixed and fix_path_only:
+            try:
+                with open(config_file, 'w') as f:
+                    json.dump(config, f, indent=2)
+                
+                print("\nSuccessfully updated Claude Desktop configuration!")
+                print("Please restart Claude Desktop for the changes to take effect.")
+                return True
+            except Exception as e:
+                print(f"Error updating configuration file: {str(e)}")
+                return False
+        elif fix_path_only:
+            print("No paths needed fixing in the configuration.")
+            return True
+    elif fix_path_only:
+        print("No Code-MCP configuration found to fix.")
+        return False
+    
+    # For normal setup, continue with configuration
     
     # Ensure mcpServers section exists
     if 'mcpServers' not in config:
@@ -81,19 +119,26 @@ def setup_claude_config(project_path=None):
     
     # Get the project path if not provided
     if not project_path:
-        print("\nEnter the path to your project directory:")
-        project_path = input("> ").strip()
+        current_dir = os.getcwd()
+        use_current = input(f"\nUse current directory as project path? ({current_dir}) [Y/n]: ").strip().lower()
         
-        # Expand the path in case it uses ~ or environment variables
-        project_path = os.path.expanduser(project_path)
-        project_path = os.path.expandvars(project_path)
-        
-        # Check if the path exists
-        if not os.path.isdir(project_path):
-            print(f"Error: Directory does not exist: {project_path}")
-            return False
+        if not use_current or use_current in ('y', 'yes'):
+            project_path = current_dir
+            print(f"Using current directory: {project_path}")
+        else:
+            print("\nEnter the path to your project directory:")
+            project_path = input("> ").strip()
+            
+            # Expand the path in case it uses ~ or environment variables
+            project_path = os.path.expanduser(project_path)
+            project_path = os.path.expandvars(project_path)
     
-    # Get the code-mcp path
+    # Check if the path exists
+    if not os.path.isdir(project_path):
+        print(f"Error: Directory does not exist: {project_path}")
+        return False
+    
+    # Get the code-mcp path (always use the simple command name to use PATH)
     code_mcp_path = get_code_mcp_path()
     
     # Create the configuration
@@ -153,6 +198,8 @@ def main():
     parser.add_argument("project_path", nargs="?", default=None,
                         help="Path to the project directory. If not provided, you will be prompted.")
     parser.add_argument("--version", action="store_true", help="Show version and exit")
+    parser.add_argument("--fix-path", action="store_true", 
+                        help="Only fix path issues in existing configuration")
     
     # Parse arguments
     args = parser.parse_args()
@@ -163,6 +210,19 @@ def main():
         print(f"Code-MCP Setup Helper version {code_mcp.__version__}")
         return 0
     
+    # Handle fix-path mode
+    if args.fix_path:
+        print("Code-MCP Path Fix Helper")
+        print("=======================")
+        print("This utility will update your Claude Desktop configuration to use code-mcp from your PATH.")
+        
+        # Run the fix
+        success = setup_claude_config(fix_path_only=True)
+        
+        # Exit with appropriate code
+        sys.exit(0 if success else 1)
+    
+    # Regular setup mode
     print("Code-MCP Setup Helper")
     print("=====================")
     print("This utility will help you configure Claude Desktop to use Code-MCP.")
