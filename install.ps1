@@ -28,8 +28,8 @@ function Test-Command {
 
 # Display banner
 Write-Host ""
-Write-Host "  _____           _        __  __  _____ _____  " -ForegroundColor Cyan
-Write-Host " / ____|         | |      |  \/  |/ ____|  __ \ " -ForegroundColor Cyan
+Write-Host "  _____          _        __  __  _____ _____  " -ForegroundColor Cyan
+Write-Host " / ____|        | |      |  \/  |/ ____|  __ \ " -ForegroundColor Cyan
 Write-Host "| |     ___   __| | ___  | \  / | |    | |__) |" -ForegroundColor Cyan
 Write-Host "| |    / _ \ / _\` |/ _ \ | |\/| | |    |  ___/ " -ForegroundColor Cyan
 Write-Host "| |___| (_) | (_| |  __/ | |  | | |____| |     " -ForegroundColor Cyan

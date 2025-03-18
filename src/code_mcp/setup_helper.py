@@ -136,7 +136,7 @@ def fix_path_in_config(config):
             # If it's an absolute path to code-mcp, replace with just the command name
             if os.path.basename(old_command) == 'code-mcp':
                 code_server['command'] = 'code-mcp'
-                print(f"Updated command from '{old_command}' to 'code-mcp'")
+                # print(f"Updated command from '{old_command}' to 'code-mcp'")
                 updated = True
                 
                 # Special case: if the command doesn't exist in PATH but we have a valid absolute path
