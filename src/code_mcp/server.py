@@ -112,42 +112,112 @@ def get_file(file_path: str) -> str:
 
 # Resource for listing directory contents
 @mcp.resource("dir://{dir_path}")
-def list_directory(dir_path: str) -> str:
-    """List the contents of a directory within the project directory."""
+def list_directory(ctx: Context, dir_path: str = "", max_depth: int = 10) -> str:
+    """
+    List the contents of a directory within the project in a tree-like format.
+    
+    Args:
+        dir_path: Path to the directory (relative to project root or absolute, empty for project root)
+        max_depth: Maximum depth for the directory tree (default: 3)
+    """
     path = Path(dir_path)
     if not path.is_absolute():
         path = PROJECT_ROOT / path
+        if dir_path == "":
+            path = PROJECT_ROOT
     
+    # Security check
     if not is_safe_path(path):
-        raise ValueError(f"Cannot access directory outside project directory: {path}")
+        return f"Error: Cannot access directory outside project directory: {path}"
     
     if not path.exists():
-        raise FileNotFoundError(f"Directory not found: {path}")
+        return f"Error: Directory does not exist: {path}"
     
     if not path.is_dir():
-        raise NotADirectoryError(f"Not a directory: {path}")
+        return f"Error: Path is not a directory: {path}"
     
     try:
-        # List files and directories
-        items = list(path.iterdir())
-        dirs = [f"📁 {item.name}/" for item in items if item.is_dir()]
-        files = [f"📄 {item.name}" for item in items if item.is_file()]
+        output = [f"Directory listing for {path}:"]
+        output.append("")
         
-        # Sort alphabetically
-        dirs.sort()
-        files.sort()
+        def generate_tree(directory: Path, prefix: str = "", is_last: bool = True, current_depth: int = 0) -> None:
+            if current_depth > max_depth:
+                output.append(f"{prefix}{'└── ' if is_last else '├── '}...")
+                return
+                
+            # Get items in the directory
+            try:
+                items = list(directory.iterdir())
+                # Sort: directories first, then files, both alphabetically
+                items.sort(key=lambda x: (x.is_file(), x.name.lower()))
+            except PermissionError:
+                output.append(f"{prefix}{'└── ' if is_last else '├── '}[Permission denied]")
+                return
+                
+            # Add empty line if we're at the root and have items
+            if current_depth == 0 and items:
+                pass  # We already have an empty line
+                
+            # Process each item
+            for i, item in enumerate(items):
+                is_last_item = i == len(items) - 1
+                
+                # Display the item
+                if current_depth == 0:
+                    # At root level, use emojis and add size for files
+                    if item.is_dir():
+                        output.append(f"📁 {item.name}/")
+                    else:
+                        size_str = f" ({item.stat().st_size:,} bytes)"
+                        output.append(f"📄 {item.name}{size_str}")
+                else:
+                    # For subdirectories, use tree structure
+                    if item.is_dir():
+                        output.append(f"{prefix}{'└── ' if is_last_item else '├── '}📁 {item.name}/")
+                    else:
+                        size_str = f" ({item.stat().st_size:,} bytes)"
+                        output.append(f"{prefix}{'└── ' if is_last_item else '├── '}📄 {item.name}{size_str}")
+                
+                # Recursively process subdirectories
+                if item.is_dir() and current_depth > 0:
+                    new_prefix = prefix + ('    ' if is_last_item else '│   ')
+                    generate_tree(item, new_prefix, True, current_depth + 1)
+                elif item.is_dir() and current_depth == 0:
+                    # First level directories get special treatment - show their contents indented
+                    subdirectory_items = list(item.iterdir())
+                    # Sort: directories first, then files, both alphabetically
+                    subdirectory_items.sort(key=lambda x: (x.is_file(), x.name.lower()))
+                    
+                    # Only show up to 5 items at the first level to avoid overwhelming output
+                    max_items = min(5, len(subdirectory_items))
+                    has_more = len(subdirectory_items) > max_items
+                    
+                    for j, subitem in enumerate(subdirectory_items[:max_items]):
+                        is_last_subitem = j == max_items - 1 and not has_more
+                        
+                        if subitem.is_dir():
+                            output.append(f"    {'└── ' if is_last_subitem else '├── '}📁 {subitem.name}/")
+                        else:
+                            size_str = f" ({subitem.stat().st_size:,} bytes)"
+                            output.append(f"    {'└── ' if is_last_subitem else '├── '}📄 {subitem.name}{size_str}")
+                    
+                    if has_more:
+                        output.append(f"    └── ... ({len(subdirectory_items) - max_items} more items)")
+                    
+                    # Add a separator between top-level directories
+                    if not is_last_item:
+                        output.append("")
         
-        # Format the output
-        output = f"Contents of {path}:\n\n"
-        if dirs:
-            output += "Directories:\n" + "\n".join(dirs) + "\n\n"
-        if files:
-            output += "Files:\n" + "\n".join(files)
+        # Generate the tree
+        generate_tree(path)
         
-        return output
+        return "\n".join(output)
+    
     except PermissionError:
-        raise PermissionError(f"Permission denied when accessing directory: {path}")
-
+        return f"Error: Permission denied when accessing directory: {path}"
+    except Exception as e:
+        return f"Error listing directory: {str(e)}"
+    
 # Resource for project structure
 @mcp.resource("project://structure")
 def get_project_structure() -> str:
@@ -1326,12 +1396,13 @@ def delete_path(ctx: Context, path_to_delete: str, confirm: bool = False) -> str
         return f"Error deleting path: {str(e)}"
 
 @mcp.tool()
-def list_directory(ctx: Context, dir_path: str = "") -> str:
+def list_directory(ctx: Context, dir_path: str = "", max_depth: int = 10) -> str:
     """
-    List the contents of a directory within the project.
+    List the contents of a directory within the project in a tree-like format.
     
     Args:
         dir_path: Path to the directory (relative to project root or absolute, empty for project root)
+        max_depth: Maximum depth for the directory tree (default: 3)
     """
     path = Path(dir_path)
     if not path.is_absolute():
@@ -1350,23 +1421,79 @@ def list_directory(ctx: Context, dir_path: str = "") -> str:
         return f"Error: Path is not a directory: {path}"
     
     try:
-        # List files and directories
-        items = list(path.iterdir())
-        
-        # Format the directory listing
         output = [f"Directory listing for {path}:"]
         output.append("")
         
-        # Sort: directories first, then files, both alphabetically
-        items.sort(key=lambda x: (x.is_file(), x.name.lower()))
+        def generate_tree(directory: Path, prefix: str = "", is_last: bool = True, current_depth: int = 0) -> None:
+            if current_depth > max_depth:
+                output.append(f"{prefix}{'└── ' if is_last else '├── '}...")
+                return
+                
+            # Get items in the directory
+            try:
+                items = list(directory.iterdir())
+                # Sort: directories first, then files, both alphabetically
+                items.sort(key=lambda x: (x.is_file(), x.name.lower()))
+            except PermissionError:
+                output.append(f"{prefix}{'└── ' if is_last else '├── '}[Permission denied]")
+                return
+                
+            # Add empty line if we're at the root and have items
+            if current_depth == 0 and items:
+                pass  # We already have an empty line
+                
+            # Process each item
+            for i, item in enumerate(items):
+                is_last_item = i == len(items) - 1
+                
+                # Display the item
+                if current_depth == 0:
+                    # At root level, use emojis and add size for files
+                    if item.is_dir():
+                        output.append(f"📁 {item.name}/")
+                    else:
+                        size_str = f" ({item.stat().st_size:,} bytes)"
+                        output.append(f"📄 {item.name}{size_str}")
+                else:
+                    # For subdirectories, use tree structure
+                    if item.is_dir():
+                        output.append(f"{prefix}{'└── ' if is_last_item else '├── '}📁 {item.name}/")
+                    else:
+                        size_str = f" ({item.stat().st_size:,} bytes)"
+                        output.append(f"{prefix}{'└── ' if is_last_item else '├── '}📄 {item.name}{size_str}")
+                
+                # Recursively process subdirectories
+                if item.is_dir() and current_depth > 0:
+                    new_prefix = prefix + ('    ' if is_last_item else '│   ')
+                    generate_tree(item, new_prefix, True, current_depth + 1)
+                elif item.is_dir() and current_depth == 0:
+                    # First level directories get special treatment - show their contents indented
+                    subdirectory_items = list(item.iterdir())
+                    # Sort: directories first, then files, both alphabetically
+                    subdirectory_items.sort(key=lambda x: (x.is_file(), x.name.lower()))
+                    
+                    # Only show up to 5 items at the first level to avoid overwhelming output
+                    max_items = min(5, len(subdirectory_items))
+                    has_more = len(subdirectory_items) > max_items
+                    
+                    for j, subitem in enumerate(subdirectory_items[:max_items]):
+                        is_last_subitem = j == max_items - 1 and not has_more
+                        
+                        if subitem.is_dir():
+                            output.append(f"    {'└── ' if is_last_subitem else '├── '}📁 {subitem.name}/")
+                        else:
+                            size_str = f" ({subitem.stat().st_size:,} bytes)"
+                            output.append(f"    {'└── ' if is_last_subitem else '├── '}📄 {subitem.name}{size_str}")
+                    
+                    if has_more:
+                        output.append(f"    └── ... ({len(subdirectory_items) - max_items} more items)")
+                    
+                    # Add a separator between top-level directories
+                    if not is_last_item:
+                        output.append("")
         
-        for item in items:
-            if item.is_dir():
-                output.append(f"📁 {item.name}/")
-            else:
-                # Show size for files
-                size_str = f" ({item.stat().st_size:,} bytes)"
-                output.append(f"📄 {item.name}{size_str}")
+        # Generate the tree
+        generate_tree(path)
         
         return "\n".join(output)
     
