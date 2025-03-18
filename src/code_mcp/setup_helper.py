@@ -42,10 +42,38 @@ def find_claude_config():
     
     return None
 
+def add_to_path(dir_path):
+    """Add a directory to PATH in shell config files"""
+    if not os.path.isdir(dir_path):
+        return False
+    
+    updated = False
+    # Check common shell config files
+    for rc_file in ['.bashrc', '.zshrc', '.bash_profile', '.profile']:
+        rc_path = os.path.expanduser(f'~/{rc_file}')
+        if not os.path.isfile(rc_path):
+            continue
+            
+        with open(rc_path, 'r') as f:
+            content = f.read()
+            
+        # Skip if already in PATH
+        if f'export PATH="{dir_path}:$PATH"' in content or f"export PATH='{dir_path}:$PATH'" in content:
+            continue
+            
+        # Add to PATH
+        with open(rc_path, 'a') as f:
+            f.write(f'\n# Added by code-mcp-setup\nexport PATH="{dir_path}:$PATH"\n')
+        print(f"Added {dir_path} to PATH in {rc_file}")
+        updated = True
+    
+    return updated
+
 def get_code_mcp_path():
     """Get the path to the code-mcp executable"""
     # First, try to use just the command name (preferred)
-    if shutil.which("code-mcp"):
+    code_mcp_path = shutil.which("code-mcp")
+    if code_mcp_path:
         return "code-mcp"
     
     # If not found in PATH, try to find the absolute path
@@ -64,17 +92,29 @@ def get_code_mcp_path():
     for path in common_paths:
         if os.path.isfile(path):
             script_path = path
+            dir_path = os.path.dirname(path)
+            
+            # Try to add the directory to PATH
+            print(f"Found code-mcp at {path}")
+            print(f"Attempting to add {dir_path} to your PATH...")
+            
+            if add_to_path(dir_path):
+                print(f"Added {dir_path} to your PATH in shell config files.")
+                print("Please restart your terminal or source your shell config for this to take effect.")
+                print("Using absolute path for now, but 'code-mcp' should work after restarting your terminal.")
+            else:
+                print(f"Could not update PATH. Please manually add {dir_path} to your PATH.")
+            
             break
     
     # If found, return the absolute path but warn the user
     if script_path:
-        print(f"Warning: code-mcp not found in PATH, using absolute path: {script_path}")
-        print("This may cause issues if you move or reinstall the package.")
-        print("Consider adding the directory to your PATH.")
+        print("For now, using the absolute path in your Claude configuration.")
         return script_path
     
     # If still not found, use the basic command and hope for the best
-    print("Warning: code-mcp not found in PATH. Using 'code-mcp' and hoping it works.")
+    print("Warning: code-mcp not found in PATH or common locations.")
+    print("Using 'code-mcp' and hoping it works.")
     print("If this fails, you may need to specify the full path in the configuration.")
     return "code-mcp"
 

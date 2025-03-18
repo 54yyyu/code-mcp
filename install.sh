@@ -143,6 +143,29 @@ if ! command_exists uv; then
   fi
 fi
 
+# Function to add directory to PATH in shell config
+add_to_path() {
+  local dir="$1"
+  local config_file="$2"
+  
+  # Skip if the file doesn't exist
+  if [ ! -f "$config_file" ]; then
+    return
+  fi
+  
+  # Check if the directory is already in the config file
+  if grep -q "export PATH=.*$dir" "$config_file"; then
+    info "PATH already contains $dir in $config_file"
+    return
+  fi
+
+  # Add to PATH
+  echo "" >> "$config_file"
+  echo "# Added by code-mcp installer" >> "$config_file"
+  echo "export PATH=\"$dir:\$PATH\"" >> "$config_file"
+  info "Added $dir to PATH in $config_file"
+}
+
 # Install code-mcp
 info "Installing code-mcp..."
 
@@ -157,6 +180,22 @@ elif command_exists pip; then
   pip install git+https://github.com/54yyyu/code-mcp.git
 else
   error "Neither uv nor pip found. Please install pip or uv and try again."
+fi
+
+# Attempt to add mambaforge bin to PATH if it exists
+MAMBA_BIN="$HOME/mambaforge/bin"
+if [ -d "$MAMBA_BIN" ]; then
+  info "Found mambaforge bin directory, ensuring it's in your PATH"
+  
+  # Add to shell config files
+  add_to_path "$MAMBA_BIN" "$HOME/.bashrc"
+  add_to_path "$MAMBA_BIN" "$HOME/.zshrc"
+  add_to_path "$MAMBA_BIN" "$HOME/.bash_profile"
+  add_to_path "$MAMBA_BIN" "$HOME/.profile"
+  
+  # Add to current session
+  export PATH="$MAMBA_BIN:$PATH"
+  info "Added $MAMBA_BIN to current session PATH"
 fi
 
 # Find the script path
