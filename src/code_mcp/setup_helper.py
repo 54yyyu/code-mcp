@@ -71,51 +71,57 @@ def add_to_path(dir_path):
 
 def get_code_mcp_path():
     """Get the path to the code-mcp executable"""
-    # First, try to use just the command name (preferred)
+    # Find the absolute path first
     code_mcp_path = shutil.which("code-mcp")
+    
+    # If found in PATH, use the absolute path instead of the command name
     if code_mcp_path:
-        return "code-mcp"
+        print(f"Found code-mcp in PATH at: {code_mcp_path}")
+        print("Using absolute path in configuration for reliability.")
+        return code_mcp_path
     
-    # If not found in PATH, try to find the absolute path
-    script_path = None
-    
-    # Check common installation locations
-    common_paths = [
+    # If not found in PATH, try to find the absolute path in common locations
+    for path in [
         os.path.expanduser("~/.local/bin/code-mcp"),
         os.path.expanduser("~/mambaforge/bin/code-mcp"),
         os.path.expanduser("~/.uv/bin/code-mcp"),
         os.path.expanduser("~/.astral/uv/bin/code-mcp"),
         "/usr/local/bin/code-mcp",
         "/opt/homebrew/bin/code-mcp"
-    ]
-    
-    for path in common_paths:
+    ]:
         if os.path.isfile(path):
-            script_path = path
-            dir_path = os.path.dirname(path)
-            
-            # Try to add the directory to PATH
             print(f"Found code-mcp at {path}")
-            print(f"Attempting to add {dir_path} to your PATH...")
             
+            # Try to add the directory to PATH for future use
+            dir_path = os.path.dirname(path)
             if add_to_path(dir_path):
                 print(f"Added {dir_path} to your PATH in shell config files.")
                 print("Please restart your terminal or source your shell config for this to take effect.")
-                print("Using absolute path for now, but 'code-mcp' should work after restarting your terminal.")
-            else:
-                print(f"Could not update PATH. Please manually add {dir_path} to your PATH.")
             
-            break
+            # Return absolute path for configuration
+            return path
     
-    # If found, return the absolute path but warn the user
-    if script_path:
-        print("For now, using the absolute path in your Claude configuration.")
-        return script_path
+    # Last resort: try to search for it anywhere in common directories
+    print("Searching for code-mcp in common locations...")
+    try:
+        # On Unix-like systems, try using the 'find' command
+        if sys.platform != 'win32':
+            import subprocess
+            result = subprocess.run(
+                ["find", os.path.expanduser("~"), "-name", "code-mcp", "-type", "f", "-executable"],
+                capture_output=True, text=True, timeout=10
+            )
+            paths = result.stdout.strip().split('\n')
+            if paths and paths[0]:
+                print(f"Found code-mcp at {paths[0]}")
+                return paths[0]
+    except Exception as e:
+        print(f"Error searching for code-mcp: {e}")
     
-    # If still not found, use the basic command and hope for the best
+    # If still not found, use the basic command as last resort
     print("Warning: code-mcp not found in PATH or common locations.")
-    print("Using 'code-mcp' and hoping it works.")
-    print("If this fails, you may need to specify the full path in the configuration.")
+    print("Using 'code-mcp' as fallback, but this may not work.")
+    print("You might need to install code-mcp properly or specify the full path manually.")
     return "code-mcp"
 
 def fix_path_in_config(config):
