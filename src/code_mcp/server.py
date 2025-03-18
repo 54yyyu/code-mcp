@@ -111,7 +111,7 @@ def get_file(file_path: str) -> str:
     return safe_read_file(path)
 
 # Resource for listing directory contents
-@mcp.resource("dir://{dir_path}")
+@mcp.resource("dir://{dir_path}?max_depth={max_depth}")
 def list_directory(ctx: Context, dir_path: str = "", max_depth: int = 10) -> str:
     """
     List the contents of a directory within the project in a tree-like format.
