@@ -112,7 +112,7 @@ def get_file(file_path: str) -> str:
 
 # Resource for listing directory contents
 @mcp.resource("dir://{dir_path}")
-def list_directory(ctx: Context, dir_path: str = "") -> str:
+def list_directory(dir_path: str = "") -> str:
     """
     List the contents of a directory within the project in a tree-like format.
     
