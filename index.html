@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code-MCP - Terminal and Code Integration for Claude AI</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>Code-MCP</h1>
+            <p class="tagline">Terminal and Code Integration for Claude AI</p>
+            <div class="cta-buttons">
+                <a href="#installation" class="btn primary-btn">Get Started</a>
+                <a href="https://github.com/54yyyu/code-mcp" class="btn secondary-btn">View on GitHub</a>
+            </div>
+        </div>
+    </header>
+
+    <section class="intro-section">
+        <div class="container">
+            <h2>Connect Claude AI to Your Development Environment</h2>
+            <p>
+                Code-MCP connects Claude AI to your development environment through the Model Context Protocol (MCP), 
+                enabling terminal commands and file operations through the AI interface.
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <i class="fas fa-terminal"></i>
+                    <h3>Terminal Access</h3>
+                    <p>Run shell commands in your project directory directly from Claude</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-file-code"></i>
+                    <h3>File Operations</h3>
+                    <p>Create, read, update, and delete files and directories</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fab fa-git-alt"></i>
+                    <h3>Git Integration</h3>
+                    <p>Special handling for git commands with safety confirmations</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-code"></i>
+                    <h3>Smart Editing</h3>
+                    <p>Enhanced editing capabilities for code files</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-search"></i>
+                    <h3>Code Analysis</h3>
+                    <p>Advanced pattern matching and function-level operations</p>
+                </div>
+                <div class="feature-card">
+                    <i class="fas fa-tools"></i>
+                    <h3>Productivity Tools</h3>
+                    <p>Operate on your codebase with natural language instructions</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="demo-section">
+        <div class="container">
+            <h2>See It In Action</h2>
+            <div class="demo-container">
+                <div class="demo-chat">
+                    <div class="chat-message user">
+                        <p>Can you show me what files have changed in my project?</p>
+                    </div>
+                    <div class="chat-message assistant">
+                        <p>Sure, I'll run git status for you:</p>
+                        <div class="code-block">
+                            <pre><code>On branch main
+Changes not staged for commit:
+  (use "git add &lt;file&gt;..." to update what will be committed)
+  (use "git restore &lt;file&gt;..." to discard changes in working directory)
+    modified:   src/app.js
+    modified:   src/components/Header.js
+
+Untracked files:
+  (use "git add &lt;file&gt;..." to include in what will be committed)
+    src/components/Sidebar.js</code></pre>
+                        </div>
+                        <p>Would you like me to show you the changes in any of these files?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="installation" class="installation-section">
+        <div class="container">
+            <h2>Installation</h2>
+            
+            <div class="installation-tabs">
+                <div class="tab-header">
+                    <button class="tab-btn active" data-tab="macos">macOS / Linux</button>
+                    <button class="tab-btn" data-tab="windows">Windows</button>
+                    <button class="tab-btn" data-tab="manual">Manual</button>
+                </div>
+                
+                <div class="tab-content active" id="macos-tab">
+                    <div class="code-block">
+                        <pre><code>curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/main/install.sh | sh</code></pre>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="windows-tab">
+                    <div class="code-block">
+                        <pre><code>powershell -c "Invoke-WebRequest -Uri https://raw.githubusercontent.com/54yyyu/code-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1"</code></pre>
+                    </div>
+                </div>
+                
+                <div class="tab-content" id="manual-tab">
+                    <h4>Install with pip</h4>
+                    <div class="code-block">
+                        <pre><code>pip install git+https://github.com/54yyyu/code-mcp.git</code></pre>
+                    </div>
+                    
+                    <h4>Or better, install with uv</h4>
+                    <div class="code-block">
+                        <pre><code>uv pip install git+https://github.com/54yyyu/code-mcp.git</code></pre>
+                    </div>
+                    
+                    <h4>For Developers</h4>
+                    <div class="code-block">
+                        <pre><code># Clone the repository
+git clone https://github.com/54yyyu/code-mcp.git
+cd code-mcp
+
+# Install in development mode with uv (recommended)
+uv pip install -e .</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="usage-section">
+        <div class="container">
+            <h2>Claude Desktop Integration</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Automatic Setup</h3>
+                        <p>Run the setup helper to configure Claude Desktop</p>
+                        <div class="code-block">
+                            <pre><code># With a specific project path
+code-mcp-setup /path/to/your/project
+                            
+# Or run without arguments to use the current directory
+code-mcp-setup</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Manual Setup (Alternative)</h3>
+                        <p>Edit Claude Desktop configuration directly</p>
+                        <ul>
+                            <li>Go to Claude > Settings > Developer > Edit Config</li>
+                            <li>Add the following to your <code>claude_desktop_config.json</code>:</li>
+                        </ul>
+                        <div class="code-block">
+                            <pre><code>{
+    "mcpServers": {
+        "code": {
+            "command": "code-mcp",
+            "args": [
+                "/path/to/your/project"
+            ]
+        }
+    }
+}</code></pre>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Save and Restart</h3>
+                        <p>Save the file and restart Claude Desktop</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="examples-section">
+        <div class="container">
+            <h2>Examples</h2>
+            <p>Try asking Claude these commands:</p>
+            <ul class="examples-list">
+                <li>"List all the files in the current directory"</li>
+                <li>"Show me the content of the README.md file"</li>
+                <li>"Create a new file called example.py with a simple hello world program"</li>
+                <li>"Run git status and show me what files have changed"</li>
+                <li>"Make these changes to main.py: replace X with Y"</li>
+                <li>"Update the process_data function in data_utils.py to handle null values"</li>
+            </ul>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Code-MCP. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/54yyyu/code-mcp">GitHub</a>
+                <a href="https://github.com/54yyyu/code-mcp/issues">Issues</a>
+                <a href="docs/api.html">API Documentation</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Code-MCP</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .docs-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 80px 0;
+            text-align: center;
+        }
+        
+        .docs-content {
+            padding: 60px 0;
+        }
+        
+        .docs-nav {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .docs-nav h3 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+        
+        .docs-nav ul {
+            list-style: none;
+        }
+        
+        .docs-nav li {
+            margin-bottom: 10px;
+        }
+        
+        .docs-nav a {
+            color: var(--dark-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            padding: 8px 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .docs-nav a:hover {
+            background-color: var(--light-gray);
+        }
+        
+        .docs-nav i {
+            margin-right: 10px;
+            color: var(--primary-color);
+        }
+        
+        .back-to-home {
+            display: inline-block;
+            margin-top: 40px;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .back-to-home:hover {
+            text-decoration: underline;
+        }
+        
+        .docs-section {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .docs-section h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .docs-section h3 {
+            margin-top: 30px;
+        }
+        
+        .code-example {
+            background-color: var(--code-bg);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .code-example code {
+            color: #f8f8f2;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            display: block;
+        }
+        
+        .docs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .docs-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease;
+        }
+        
+        .docs-card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .docs-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .docs-card i {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="docs-header">
+        <div class="container">
+            <h1>Code-MCP Documentation</h1>
+            <p class="tagline">Everything you need to know to get started</p>
+        </div>
+    </div>
+
+    <div class="docs-content">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="docs-nav">
+                        <h3>Contents</h3>
+                        <ul>
+                            <li><a href="#getting-started"><i class="fas fa-play"></i> Getting Started</a></li>
+                            <li><a href="#installation"><i class="fas fa-download"></i> Installation</a></li>
+                            <li><a href="#configuration"><i class="fas fa-cog"></i> Configuration</a></li>
+                            <li><a href="#basic-usage"><i class="fas fa-terminal"></i> Basic Usage</a></li>
+                            <li><a href="#api-reference"><i class="fas fa-book"></i> API Reference</a></li>
+                            <li><a href="#examples"><i class="fas fa-lightbulb"></i> Examples</a></li>
+                            <li><a href="#troubleshooting"><i class="fas fa-wrench"></i> Troubleshooting</a></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-9">
+                    <div class="docs-section" id="getting-started">
+                        <h2>Getting Started</h2>
+                        <p>
+                            Code-MCP connects Claude AI to your development environment through the Model Context Protocol (MCP), 
+                            enabling terminal commands and file operations through the AI interface.
+                        </p>
+                        
+                        <h3>How It Works</h3>
+                        <p>
+                            Code-MCP runs as an MCP server that Claude Desktop can connect to. Once connected, Claude can:
+                        </p>
+                        <ul>
+                            <li>Execute terminal commands in your project directory</li>
+                            <li>Read and modify files</li>
+                            <li>Perform git operations</li>
+                            <li>Navigate your project structure</li>
+                            <li>Make smart code edits with advanced pattern matching</li>
+                        </ul>
+                        
+                        <p>
+                            All operations are performed with safety measures to prevent actions outside your project directory
+                            and to confirm potentially destructive operations.
+                        </p>
+                    </div>
+                    
+                    <div class="docs-section" id="installation">
+                        <h2>Installation</h2>
+                        
+                        <h3>Option 1: One-Line Install (Recommended)</h3>
+                        <h4>For macOS / Linux:</h4>
+                        <div class="code-example">
+                            <code>curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/main/install.sh | sh</code>
+                        </div>
+                        
+                        <h4>For Windows:</h4>
+                        <div class="code-example">
+                            <code>powershell -c "Invoke-WebRequest -Uri https://raw.githubusercontent.com/54yyyu/code-mcp/main/install.ps1 -OutFile install.ps1; .\install.ps1"</code>
+                        </div>
+                        
+                        <h3>Option 2: Manual Installation</h3>
+                        <p>Install using pip or uv:</p>
+                        <div class="code-example">
+                            <code>pip install git+https://github.com/54yyyu/code-mcp.git</code>
+                        </div>
+                        
+                        <div class="code-example">
+                            <code>uv pip install git+https://github.com/54yyyu/code-mcp.git</code>
+                        </div>
+                        
+                        <h3>For Development</h3>
+                        <p>If you're contributing to Code-MCP, install in development mode:</p>
+                        <div class="code-example">
+                            <code># Clone the repository
+git clone https://github.com/54yyyu/code-mcp.git
+cd code-mcp
+
+# Install in development mode
+uv pip install -e .</code>
+                        </div>
+                    </div>
+                    
+                    <div class="docs-section" id="configuration">
+                        <h2>Configuration</h2>
+                        
+                        <h3>Automatic Setup</h3>
+                        <p>After installation, run the setup helper:</p>
+                        <div class="code-example">
+                            <code># With a specific project path
+code-mcp-setup /path/to/your/project
+
+# Or run without arguments to use the current directory
+code-mcp-setup</code>
+                        </div>
+                        
+                        <h3>Manual Configuration</h3>
+                        <p>If you prefer to configure Claude Desktop manually:</p>
+                        <ol>
+                            <li>Open Claude Desktop</li>
+                            <li>Go to Settings > Developer > Edit Config</li>
+                            <li>Add the following to your <code>claude_desktop_config.json</code>:</li>
+                        </ol>
+                        <div class="code-example">
+                            <code>{
+    "mcpServers": {
+        "code": {
+            "command": "code-mcp",
+            "args": [
+                "/path/to/your/project"
+            ]
+        }
+    }
+}</code>
+                        </div>
+                        <p>Save the file and restart Claude Desktop for the changes to take effect.</p>
+                        
+                        <h3>Updating Existing Configurations</h3>
+                        <p>If you previously installed code-mcp but need to update your configuration, use the <code>--fix-path</code> flag:</p>
+                        <div class="code-example">
+                            <code>code-mcp-setup --fix-path</code>
+                        </div>
+                    </div>
+                    
+                    <div class="docs-section" id="basic-usage">
+                        <h2>Basic Usage</h2>
+                        
+                        <h3>Terminal Commands</h3>
+                        <p>Ask Claude to run terminal commands in your project directory:</p>
+                        <div class="code-example">
+                            <code>"Run ls -la to list all files in the current directory"</code>
+                        </div>
+                        
+                        <h3>Reading Files</h3>
+                        <p>Ask Claude to show file contents:</p>
+                        <div class="code-example">
+                            <code>"Show me the content of README.md"</code>
+                        </div>
+                        
+                        <h3>Editing Files</h3>
+                        <p>Ask Claude to create or modify files:</p>
+                        <div class="code-example">
+                            <code>"Create a new file called example.py with a hello world program"</code>
+                        </div>
+                        <div class="code-example">
+                            <code>"Update the calculate_total function in app.py to handle null values"</code>
+                        </div>
+                        
+                        <h3>Git Operations</h3>
+                        <p>Ask Claude to perform git operations:</p>
+                        <div class="code-example">
+                            <code>"Show me the git status of this project"</code>
+                        </div>
+                        <div class="code-example">
+                            <code>"Create a new git branch called feature/user-authentication"</code>
+                        </div>
+                    </div>
+                    
+                    <div class="docs-section" id="api-reference">
+                        <h2>API Reference</h2>
+                        
+                        <p>Code-MCP provides several tools that Claude can use to interact with your development environment:</p>
+                        
+                        <div class="docs-grid">
+                            <div class="docs-card">
+                                <i class="fas fa-terminal"></i>
+                                <h3>Terminal</h3>
+                                <p>Execute shell commands in your project directory.</p>
+                                <a href="api.html#run-command">View Documentation →</a>
+                            </div>
+                            
+                            <div class="docs-card">
+                                <i class="fab fa-git-alt"></i>
+                                <h3>Git</h3>
+                                <p>Perform git operations with safety confirmations.</p>
+                                <a href="api.html#git-operation">View Documentation →</a>
+                            </div>
+                            
+                            <div class="docs-card">
+                                <i class="fas fa-file-alt"></i>
+                                <h3>File Operations</h3>
+                                <p>Read, create, edit, and delete files.</p>
+                                <a href="api.html#read-file">View Documentation →</a>
+                            </div>
+                            
+                            <div class="docs-card">
+                                <i class="fas fa-code"></i>
+                                <h3>Smart Editing</h3>
+                                <p>Advanced code editing with pattern matching.</p>
+                                <a href="api.html#smart-edit">View Documentation →</a>
+                            </div>
+                            
+                            <div class="docs-card">
+                                <i class="fas fa-folder-open"></i>
+                                <h3>Directory Operations</h3>
+                                <p>List, create, and manage directories.</p>
+                                <a href="api.html#list-directory">View Documentation →</a>
+                            </div>
+                            
+                            <div class="docs-card">
+                                <i class="fas fa-project-diagram"></i>
+                                <h3>Batch Editing</h3>
+                                <p>Make changes across multiple files.</p>
+                                <a href="api.html#edit-block">View Documentation →</a>
+                            </div>
+                        </div>
+                        
+                        <p><a href="api.html" class="btn primary-btn">View Full API Documentation</a></p>
+                    </div>
+                    
+                    <div class="docs-section" id="examples">
+                        <h2>Examples</h2>
+                        
+                        <h3>Example 1: Exploring a Project</h3>
+                        <p>Ask Claude to help you understand a new project:</p>
+                        <div class="code-example">
+                            <code>"Can you list all files in this project and then show me the content of the README.md file?"</code>
+                        </div>
+                        
+                        <h3>Example 2: Creating a New Feature</h3>
+                        <p>Ask Claude to help you add a new feature to your code:</p>
+                        <div class="code-example">
+                            <code>"I need to add input validation to the user_registration function in auth.py. Can you show me the current function and then help me update it?"</code>
+                        </div>
+                        
+                        <h3>Example 3: Git Workflow</h3>
+                        <p>Use Claude to help with git operations:</p>
+                        <div class="code-example">
+                            <code>"Show me what files have changed, create a new branch called 'bugfix/login-error', and then commit the changes to that branch."</code>
+                        </div>
+                        
+                        <h3>Example 4: Batch Updating Documentation</h3>
+                        <p>Ask Claude to update documentation across multiple files:</p>
+                        <div class="code-example">
+                            <code>"Can you find all functions in the src/utils directory that don't have docstrings and add appropriate documentation to them?"</code>
+                        </div>
+                    </div>
+                    
+                    <div class="docs-section" id="troubleshooting">
+                        <h2>Troubleshooting</h2>
+                        
+                        <h3>Claude Desktop Configuration</h3>
+                        <p><strong>Problem:</strong> Claude reports it can't connect to the MCP server</p>
+                        <p><strong>Solution:</strong> Check your Claude Desktop configuration:</p>
+                        <ul>
+                            <li>Verify the path to code-mcp is correct</li>
+                            <li>Make sure the project path exists and is accessible</li>
+                            <li>Try running <code>code-mcp-setup --fix-path</code> to update the configuration</li>
+                        </ul>
+                        
+                        <h3>Path Issues</h3>
+                        <p><strong>Problem:</strong> Claude can't find code-mcp even after installation</p>
+                        <p><strong>Solution:</strong> Make sure code-mcp is in your PATH:</p>
+                        <ul>
+                            <li>Check if you can run <code>code-mcp --version</code> in your terminal</li>
+                            <li>If not, find where it was installed with <code>which code-mcp</code> (Unix) or <code>where code-mcp</code> (Windows)</li>
+                            <li>Add that directory to your PATH or use the absolute path in your configuration</li>
+                        </ul>
+                        
+                        <h3>Permission Issues</h3>
+                        <p><strong>Problem:</strong> Commands fail with permission denied errors</p>
+                        <p><strong>Solution:</strong> Check file and directory permissions:</p>
+                        <ul>
+                            <li>Make sure your user has permission to access and modify the project directory</li>
+                            <li>For git operations, ensure your git client is properly configured</li>
+                        </ul>
+                        
+                        <h3>Getting Help</h3>
+                        <p>If you're still having issues, you can:</p>
+                        <ul>
+                            <li>Check the <a href="https://github.com/54yyyu/code-mcp/issues">GitHub Issues</a> to see if others have encountered the same problem</li>
+                            <li>Open a new issue with details about your environment and the problem you're facing</li>
+                        </ul>
+                    </div>
+                    
+                    <a href="../index.html" class="back-to-home">← Back to Home</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Code-MCP. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/54yyyu/code-mcp">GitHub</a>
+                <a href="https://github.com/54yyyu/code-mcp/issues">Issues</a>
+                <a href="../index.html">Home</a>
+                <a href="api.html">API Reference</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Documentation - Code-MCP</title>
+    <link rel="stylesheet" href="../css/styles.css">
+    <style>
+        /* Additional styles for API docs */
+        body {
+            background-color: #f8f9fa;
+        }
+        
+        .api-section {
+            padding: 60px 0;
+        }
+        
+        .api-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .api-header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+        }
+        
+        .api-nav {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+        }
+        
+        .api-nav ul {
+            list-style: none;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .api-nav a {
+            color: var(--primary-color);
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            transition: background-color 0.2s ease;
+        }
+        
+        .api-nav a:hover {
+            background-color: rgba(67, 97, 238, 0.1);
+        }
+        
+        .api-card {
+            background-color: white;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .api-card h2 {
+            color: var(--primary-color);
+            border-bottom: 2px solid var(--light-gray);
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .api-card h3 {
+            font-size: 1.2rem;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        
+        .parameter-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        .parameter-table th, .parameter-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .parameter-table th {
+            background-color: var(--light-color);
+            font-weight: 600;
+        }
+        
+        .code-example {
+            background-color: var(--code-bg);
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+        
+        .code-example code {
+            color: #f8f8f2;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            display: block;
+        }
+        
+        .back-to-home {
+            display: inline-block;
+            margin-top: 40px;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+        
+        .back-to-home:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <header style="padding: 60px 0;">
+        <div class="container">
+            <h1>Code-MCP</h1>
+            <p class="tagline">API Documentation</p>
+        </div>
+    </header>
+
+    <section class="api-section">
+        <div class="container">
+            <div class="api-nav">
+                <ul>
+                    <li><a href="#run-command">run_command</a></li>
+                    <li><a href="#git-operation">git_operation</a></li>
+                    <li><a href="#read-file">read_file</a></li>
+                    <li><a href="#edit-file">edit_file</a></li>
+                    <li><a href="#smart-edit">smart_edit</a></li>
+                    <li><a href="#edit-block">edit_block</a></li>
+                    <li><a href="#list-directory">list_directory</a></li>
+                    <li><a href="#create-directory">create_directory</a></li>
+                    <li><a href="#delete-path">delete_path</a></li>
+                </ul>
+            </div>
+
+            <div class="api-card" id="run-command">
+                <h2>run_command</h2>
+                <p>Execute a shell command and return its output.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>command</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>The shell command to execute</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example</h3>
+                <div class="code-example">
+                    <code>run_command("ls -la")</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="git-operation">
+                <h2>git_operation</h2>
+                <p>Execute a git operation in the project repository.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>operation</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>The git operation to perform (e.g., "status", "log", "branch")</td>
+                        </tr>
+                        <tr>
+                            <td>confirm</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Set to true to execute operations that require confirmation (like push)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example</h3>
+                <div class="code-example">
+                    <code>git_operation("status")</code>
+                </div>
+                <div class="code-example">
+                    <code>git_operation("push origin main", confirm=True)</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="read-file">
+                <h2>read_file</h2>
+                <p>Read the contents of a file within the project directory.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>file_path</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Path to the file (relative to project root or absolute)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example</h3>
+                <div class="code-example">
+                    <code>read_file("README.md")</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="edit-file">
+                <h2>edit_file</h2>
+                <p>Edit a file with various operations: write, append, insert, replace, or delete.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>file_path</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Path to the file (relative to project root or absolute)</td>
+                        </tr>
+                        <tr>
+                            <td>operation</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Type of edit ('write', 'append', 'insert', 'replace', 'delete', 'delete_lines')</td>
+                        </tr>
+                        <tr>
+                            <td>content</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Content to write, append, or insert, or replacement content</td>
+                        </tr>
+                        <tr>
+                            <td>line_number</td>
+                            <td>integer</td>
+                            <td>No</td>
+                            <td>Line number for insert operation (1-based index)</td>
+                        </tr>
+                        <tr>
+                            <td>pattern</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Pattern to find for replace or delete operations</td>
+                        </tr>
+                        <tr>
+                            <td>start_line</td>
+                            <td>integer</td>
+                            <td>No</td>
+                            <td>First line to remove for delete_lines operation (1-based index)</td>
+                        </tr>
+                        <tr>
+                            <td>end_line</td>
+                            <td>integer</td>
+                            <td>No</td>
+                            <td>Last line to remove for delete_lines operation (1-based index, inclusive)</td>
+                        </tr>
+                        <tr>
+                            <td>confirm</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Set to true to execute the edit, false to preview only</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Examples</h3>
+                <div class="code-example">
+                    <code>edit_file("example.py", operation="write", content="print('Hello, World!')", confirm=True)</code>
+                </div>
+                <div class="code-example">
+                    <code>edit_file("example.py", operation="replace", pattern="Hello", content="Greetings", confirm=True)</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="smart-edit">
+                <h2>smart_edit</h2>
+                <p>Enhanced file editing with smart pattern matching and function-level operations.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>file_path</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Path to the file (relative to project root or absolute)</td>
+                        </tr>
+                        <tr>
+                            <td>operation</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Type of edit ('preview', 'update_function', 'replace', 'delete', 'append', 'write', 'edit_block')</td>
+                        </tr>
+                        <tr>
+                            <td>function_name</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Target function name for function-level operations</td>
+                        </tr>
+                        <tr>
+                            <td>pattern</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Pattern to find (with flexible whitespace matching)</td>
+                        </tr>
+                        <tr>
+                            <td>new_content</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>New content to insert/replace</td>
+                        </tr>
+                        <tr>
+                            <td>regex_mode</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Enable regex pattern matching</td>
+                        </tr>
+                        <tr>
+                            <td>context_lines</td>
+                            <td>integer</td>
+                            <td>No</td>
+                            <td>Number of context lines to show in previews</td>
+                        </tr>
+                        <tr>
+                            <td>confirm</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Set to true to execute the edit, false to preview only</td>
+                        </tr>
+                        <tr>
+                            <td>edit_format</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Format for edits ('search_replace', 'unified_diff', 'whole_file') when using edit_block operation</td>
+                        </tr>
+                        <tr>
+                            <td>fuzzy_match</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Enable fuzzy matching for more flexible pattern matching</td>
+                        </tr>
+                        <tr>
+                            <td>match_indent</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Account for indentation differences when matching patterns</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Examples</h3>
+                <div class="code-example">
+                    <code>smart_edit("app.py", operation="preview", function_name="process_data")</code>
+                </div>
+                <div class="code-example">
+                    <code>smart_edit("app.py", operation="update_function", function_name="process_data", new_content="def process_data(data):\n    # Updated implementation\n    if data is None:\n        return {}\n    return data", confirm=True)</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="edit-block">
+                <h2>edit_block</h2>
+                <p>Process edit blocks to modify code across multiple files.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>edit_content</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Text containing edit blocks in either search/replace or unified diff format</td>
+                        </tr>
+                        <tr>
+                            <td>confirm</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Set to true to execute the edits, false to preview only</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example with Search/Replace Format</h3>
+                <div class="code-example">
+<code>edit_block("""app.py
+<<<<<<< SEARCH
+def get_data():
+    return {"status": "ok"}
+=======
+def get_data():
+    return {"status": "ok", "version": "1.0"}
+>>>>>>> REPLACE
+""", confirm=True)</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="list-directory">
+                <h2>list_directory</h2>
+                <p>List the contents of a directory within the project in a tree-like format.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>dir_path</td>
+                            <td>string</td>
+                            <td>No</td>
+                            <td>Path to the directory (relative to project root or absolute, empty for project root)</td>
+                        </tr>
+                        <tr>
+                            <td>max_depth</td>
+                            <td>integer</td>
+                            <td>No</td>
+                            <td>Maximum depth for the directory tree (default: 10)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example</h3>
+                <div class="code-example">
+                    <code>list_directory("src", max_depth=2)</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="create-directory">
+                <h2>create_directory</h2>
+                <p>Create a directory within the project.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>dir_path</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Path to the directory to create (relative to project root or absolute)</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example</h3>
+                <div class="code-example">
+                    <code>create_directory("new_folder/subfolder")</code>
+                </div>
+            </div>
+
+            <div class="api-card" id="delete-path">
+                <h2>delete_path</h2>
+                <p>Delete a file or directory within the project.</p>
+                
+                <h3>Parameters</h3>
+                <table class="parameter-table">
+                    <thead>
+                        <tr>
+                            <th>Parameter</th>
+                            <th>Type</th>
+                            <th>Required</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>path_to_delete</td>
+                            <td>string</td>
+                            <td>Yes</td>
+                            <td>Path to delete (relative to project root or absolute)</td>
+                        </tr>
+                        <tr>
+                            <td>confirm</td>
+                            <td>boolean</td>
+                            <td>No</td>
+                            <td>Set to true to execute the deletion, false to preview only</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <h3>Example</h3>
+                <div class="code-example">
+                    <code>delete_path("temp_file.txt", confirm=True)</code>
+                </div>
+            </div>
+
+            <a href="../index.html" class="back-to-home">← Back to Home</a>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 Code-MCP. Released under the MIT License.</p>
+            <div class="footer-links">
+                <a href="https://github.com/54yyyu/code-mcp">GitHub</a>
+                <a href="https://github.com/54yyyu/code-mcp/issues">Issues</a>
+                <a href="../index.html">Home</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
