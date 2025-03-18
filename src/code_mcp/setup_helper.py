@@ -44,7 +44,38 @@ def find_claude_config():
 
 def get_code_mcp_path():
     """Get the path to the code-mcp executable"""
-    # Always use just the command name to ensure PATH lookup
+    # First, try to use just the command name (preferred)
+    if shutil.which("code-mcp"):
+        return "code-mcp"
+    
+    # If not found in PATH, try to find the absolute path
+    script_path = None
+    
+    # Check common installation locations
+    common_paths = [
+        os.path.expanduser("~/.local/bin/code-mcp"),
+        os.path.expanduser("~/mambaforge/bin/code-mcp"),
+        os.path.expanduser("~/.uv/bin/code-mcp"),
+        os.path.expanduser("~/.astral/uv/bin/code-mcp"),
+        "/usr/local/bin/code-mcp",
+        "/opt/homebrew/bin/code-mcp"
+    ]
+    
+    for path in common_paths:
+        if os.path.isfile(path):
+            script_path = path
+            break
+    
+    # If found, return the absolute path but warn the user
+    if script_path:
+        print(f"Warning: code-mcp not found in PATH, using absolute path: {script_path}")
+        print("This may cause issues if you move or reinstall the package.")
+        print("Consider adding the directory to your PATH.")
+        return script_path
+    
+    # If still not found, use the basic command and hope for the best
+    print("Warning: code-mcp not found in PATH. Using 'code-mcp' and hoping it works.")
+    print("If this fails, you may need to specify the full path in the configuration.")
     return "code-mcp"
 
 def fix_path_in_config(config):
@@ -61,6 +92,42 @@ def fix_path_in_config(config):
                 code_server['command'] = 'code-mcp'
                 print(f"Updated command from '{old_command}' to 'code-mcp'")
                 updated = True
+                
+                # Special case: if the command doesn't exist in PATH but we have a valid absolute path
+                # Create a symlink to the actual command or provide instructions
+                if not shutil.which('code-mcp') and os.path.isfile(old_command):
+                    try:
+                        # Try to create a symlink in ~/.local/bin
+                        local_bin = os.path.expanduser('~/.local/bin')
+                        if not os.path.exists(local_bin):
+                            os.makedirs(local_bin, exist_ok=True)
+                            
+                        symlink_path = os.path.join(local_bin, 'code-mcp')
+                        if os.path.exists(symlink_path):
+                            os.remove(symlink_path)
+                            
+                        os.symlink(old_command, symlink_path)
+                        print(f"Created a symlink from {old_command} to {symlink_path}")
+                        print(f"Make sure {local_bin} is in your PATH")
+                        
+                        # Add to shell configs if missing
+                        for rc_file in ['.bashrc', '.zshrc', '.bash_profile', '.profile']:
+                            rc_path = os.path.expanduser(f'~/{rc_file}')
+                            if os.path.isfile(rc_path):
+                                with open(rc_path, 'r') as f:
+                                    content = f.read()
+                                    
+                                if local_bin not in content:
+                                    with open(rc_path, 'a') as f:
+                                        f.write(f'\n# Added by code-mcp-setup\nexport PATH="{local_bin}:$PATH"\n')
+                                    print(f"Added {local_bin} to PATH in {rc_file}")
+                    except Exception as e:
+                        print(f"Warning: Could not create symlink - {str(e)}")
+                        print(f"You can continue to use the absolute path in your config:")
+                        print(f"  '{old_command}'")
+                        # Revert the change
+                        code_server['command'] = old_command
+                        updated = False
     
     return updated
 

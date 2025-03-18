@@ -162,7 +162,7 @@ fi
 # Find the script path
 find_script_path() {
   # Try to find where code-mcp was installed
-  for DIR in "$HOME/.local/bin" "$HOME/Library/Python/"*"/bin" "$HOME/.astral/uv/venvs/"*"/bin" "/usr/local/bin" "$HOME/mambaforge/bin"; do
+  for DIR in "$HOME/.local/bin" "$HOME/Library/Python/"*"/bin" "$HOME/.astral/uv/venvs/"*"/bin" "/usr/local/bin" "$HOME/mambaforge/bin" "$HOME/.uv/bin" "$HOME/.uv/venvs/"*"/bin" "$HOME/.astral/uv/bin" "/opt/homebrew/bin"; do
     # Expand glob patterns
     for GLOB in $DIR; do
       if [ -f "$GLOB/code-mcp" ]; then
@@ -171,6 +171,21 @@ find_script_path() {
       fi
     done
   done
+  
+  # Check Python's script directory
+  PYTHON_BIN_DIR=$($PYTHON_CMD -c "import sys, os; print(os.path.join(sys.prefix, 'bin'))" 2>/dev/null)
+  if [ -n "$PYTHON_BIN_DIR" ] && [ -f "$PYTHON_BIN_DIR/code-mcp" ]; then
+    echo "$PYTHON_BIN_DIR"
+    return 0
+  fi
+  
+  # Last resort - try to find it anywhere in standard locations
+  find_result=$(find /usr/local /opt/homebrew $HOME/.local $HOME/Library $HOME/.uv $HOME/.astral $HOME/mambaforge -name code-mcp -type f 2>/dev/null | head -n 1)
+  if [ -n "$find_result" ]; then
+    dirname "$find_result"
+    return 0
+  fi
+  
   return 1
 }
 
@@ -185,28 +200,92 @@ else
   if [ -n "$SCRIPT_PATH" ]; then
     info "Found code-mcp at $SCRIPT_PATH"
     
+    # Create a symlink in /usr/local/bin if possible (requires sudo)
+    if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ]; then
+      ln -sf "$SCRIPT_PATH/code-mcp" "/usr/local/bin/code-mcp"
+      info "Created symlink in /usr/local/bin"
+      
+      if command_exists code-mcp; then
+        VERSION=$(code-mcp --version 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "Unknown")
+        success "Installation successful! Code-MCP version $VERSION"
+        return
+      fi
+    fi
+    
     # Add to PATH for current session
     export PATH="$SCRIPT_PATH:$PATH"
     
     # Update shell config files
     if [ -f "$HOME/.bashrc" ]; then
-      if ! grep -q "export PATH=\"$SCRIPT_PATH:\\\$PATH\"" "$HOME/.bashrc"; then
+      if ! grep -q "$SCRIPT_PATH" "$HOME/.bashrc"; then
         echo "export PATH=\"$SCRIPT_PATH:\$PATH\"" >> "$HOME/.bashrc"
         info "Added $SCRIPT_PATH to PATH in .bashrc"
       fi
     fi
     
     if [ -f "$HOME/.zshrc" ]; then
-      if ! grep -q "export PATH=\"$SCRIPT_PATH:\\\$PATH\"" "$HOME/.zshrc"; then
+      if ! grep -q "$SCRIPT_PATH" "$HOME/.zshrc"; then
         echo "export PATH=\"$SCRIPT_PATH:\$PATH\"" >> "$HOME/.zshrc"
         info "Added $SCRIPT_PATH to PATH in .zshrc"
       fi
     fi
     
+    # Also try .bash_profile and .profile for macOS
+    if [ "$OS" = "macos" ]; then
+      if [ -f "$HOME/.bash_profile" ]; then
+        if ! grep -q "$SCRIPT_PATH" "$HOME/.bash_profile"; then
+          echo "export PATH=\"$SCRIPT_PATH:\$PATH\"" >> "$HOME/.bash_profile"
+          info "Added $SCRIPT_PATH to PATH in .bash_profile"
+        fi
+      fi
+      
+      if [ -f "$HOME/.profile" ]; then
+        if ! grep -q "$SCRIPT_PATH" "$HOME/.profile"; then
+          echo "export PATH=\"$SCRIPT_PATH:\$PATH\"" >> "$HOME/.profile"
+          info "Added $SCRIPT_PATH to PATH in .profile"
+        fi
+      fi
+    fi
+    
     warn "Please restart your terminal or run 'source ~/.bashrc' (or .zshrc) to update your PATH"
-    success "Installation successful! You will need to refresh your terminal environment."
+    
+    # Print the full path for manual use
+    echo ""
+    echo "To use code-mcp immediately without restarting your terminal, you can:"
+    echo ""
+    echo "  1. Run with the full path:"
+    echo "     $SCRIPT_PATH/code-mcp"
+    echo ""
+    echo "  2. Or update your current session's PATH:"
+    echo "     export PATH=\"$SCRIPT_PATH:\$PATH\""
+    echo ""
+    
+    # Try one more check after updating PATH in the current session
+    if command_exists code-mcp; then
+      VERSION=$(code-mcp --version 2>&1 | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' || echo "Unknown")
+      success "Installation successful! Code-MCP is now available in this terminal session."
+    else
+      warn "The installation succeeded, but you'll need to update your PATH to use code-mcp."
+    fi
   else
-    error "Installation failed. Try installing manually: pip install git+https://github.com/54yyyu/code-mcp.git"
+    # Last attempt - try to get the directory directly from pip
+    PIP_SCRIPT_PATH=$($PYTHON_CMD -m pip show code-mcp 2>/dev/null | grep "^Location:" | cut -d " " -f 2)
+    if [ -n "$PIP_SCRIPT_PATH" ]; then
+      SITE_BIN_DIR="$PIP_SCRIPT_PATH/../../../bin"
+      if [ -f "$SITE_BIN_DIR/code-mcp" ]; then
+        SCRIPT_PATH="$SITE_BIN_DIR"
+        info "Found code-mcp at $SCRIPT_PATH"
+        echo ""
+        echo "To use code-mcp, add this directory to your PATH:"
+        echo "export PATH=\"$SCRIPT_PATH:\$PATH\""
+        echo ""
+        echo "You can add this line to your shell configuration file (.bashrc, .zshrc, etc.)"
+      else
+        warn "Found package at $PIP_SCRIPT_PATH but could not locate the executable."
+      fi
+    else
+      error "Installation failed. Try installing manually: pip install git+https://github.com/54yyyu/code-mcp.git"
+    fi
   fi
 fi
 
