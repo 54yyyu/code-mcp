@@ -5,7 +5,7 @@ description = "Terminal and code integration through the Model Context Protocol"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    {name = "54yyyu", email = "54yyyu@gmail.com}
+    {name = "54yyyu", email = "54yyyu@gmail.com"}
 ]
 license = {text = "MIT"}
 classifiers = [
