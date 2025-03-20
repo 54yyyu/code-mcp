@@ -114,9 +114,10 @@ Note: All new installations automatically use the PATH-based approach.
 You can connect Claude Desktop to a code-mcp instance running on a remote server.
 
 **Prerequisites:**
-- code-mcp must be installed on the remote server first
 - SSH access to the remote server
 - Python 3.10+ on both local and remote machines
+
+The setup script will automatically check if code-mcp is installed on the remote server and install it if needed.
 
 ```bash
 # Set up a remote connection (with default options)
@@ -135,10 +136,11 @@ code-mcp-remote --remote-host user@example.com \
 ```
 
 The remote setup:
-1. Uploads the bridge server script to the remote server
-2. Starts the bridge server on the remote machine
-3. Sets up an SSH tunnel to securely communicate with the remote server
-4. Configures Claude Desktop to use the remote connection
+1. Checks if code-mcp is installed on the remote server and installs it if needed
+2. Uploads the bridge server script to the remote server
+3. Starts the bridge server on the remote machine
+4. Sets up an SSH tunnel to securely communicate with the remote server
+5. Configures Claude Desktop to use the remote connection
 
 This allows you to work with codebases on remote servers, including cloud VMs and containers. When you're done, press Ctrl+C to terminate the SSH tunnel and clean up the configuration.
 
