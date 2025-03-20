@@ -119,6 +119,23 @@ You can connect Claude Desktop to a code-mcp instance running on a remote server
 
 The setup script will automatically check if code-mcp is installed on the remote server and install it if needed.
 
+#### One-line installation
+
+```bash
+# Install and set up remote connection with one command
+curl -sSL https://raw.githubusercontent.com/54yyyu/code-mcp/remote-edit/remote-install.sh | bash -s -- --remote-host user@hostname
+
+# With additional options
+curl -sSL https://raw.githubusercontent.com/54yyyu/code-mcp/remote-edit/remote-install.sh | bash -s -- \
+  --remote-host user@hostname \
+  --remote-project-path /path/to/project \
+  --local-port 3000 \
+  --remote-port 5000 \
+  --ssh-key ~/.ssh/id_ed25519
+```
+
+This installs code-mcp locally if needed, configures remote connection, and sets up Claude Desktop.
+
 ```bash
 # Set up a remote connection (with default options)
 code-mcp-remote --remote-host user@example.com --remote-project-path /path/to/remote/project
