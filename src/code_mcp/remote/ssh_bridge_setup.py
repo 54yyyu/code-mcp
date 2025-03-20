@@ -342,74 +342,6 @@ def check_and_install_code_mcp(remote_host, code_mcp_path, control_path=None, ss
         verify_cmd = "command -v code-mcp || echo 'NOT_FOUND'"
         verify_result = run_ssh_command(
             remote_host,
-def check_and_install_code_mcp(remote_host, code_mcp_path, control_path=None, ssh_key=None):
-    """Check if code-mcp is installed on the remote host and install it if needed"""
-    print("Checking if code-mcp is installed on the remote server...")
-    
-    # Check if code-mcp exists and is executable
-    check_cmd = f"which {code_mcp_path} || command -v {code_mcp_path} || echo 'NOT_FOUND'"
-    check_result = run_ssh_command(
-        remote_host,
-        check_cmd,
-        control_path,
-        ssh_key,
-        timeout=10
-    )
-    
-    if check_result and "NOT_FOUND" not in check_result:
-        print(f"Found code-mcp on remote server at: {check_result}")
-        return True
-    
-    print("code-mcp not found on remote server. Attempting to install...")
-    
-    # Try to install code-mcp using pip or uv
-    try:
-        # First try to use uv if available (faster)
-        install_cmd_uv = "command -v uv >/dev/null && uv pip install git+https://github.com/54yyyu/code-mcp.git || echo 'UV_NOT_FOUND'"
-        uv_result = run_ssh_command(
-            remote_host,
-            install_cmd_uv,
-            control_path,
-            ssh_key,
-            timeout=120  # Installation might take a while
-        )
-        
-        if uv_result and "UV_NOT_FOUND" not in uv_result:
-            print("Successfully installed code-mcp using uv")
-            return True
-        
-        # Fall back to pip
-        print("UV not found or installation failed. Trying with pip...")
-        install_cmd_pip = "pip3 install --user git+https://github.com/54yyyu/code-mcp.git"
-        pip_result = run_ssh_command(
-            remote_host,
-            install_cmd_pip,
-            control_path,
-            ssh_key,
-            timeout=120
-        )
-        
-        # Verify installation
-        verify_cmd = "command -v code-mcp || echo 'NOT_FOUND'"
-        verify_result = run_ssh_command(
-            remote_host,
-            verify_cmd,
-            control_path,
-            ssh_key,
-            timeout=10
-        )
-        
-        if verify_result and "NOT_FOUND" not in verify_result:
-            print(f"Successfully installed code-mcp on remote server at: {verify_result}")
-            return True
-        else:
-            print(f"Installation verification failed. Please install code-mcp manually on {remote_host}")
-            return False
-            
-    except Exception as e:
-        print(f"Error installing code-mcp: {e}")
-        print(f"Please install code-mcp manually on {remote_host}")
-        return False
             verify_cmd,
             control_path,
             ssh_key,
@@ -535,14 +467,6 @@ def main():
         print("Warning: Could not establish persistent SSH connection.")
         print("You may be prompted for your password multiple times.")
         control_path = None
-        
-    # Check if code-mcp is installed on the remote server and install it if needed
-    if not check_and_install_code_mcp(args.remote_host, args.code_mcp_path, control_path, args.ssh_key):
-        print("Warning: code-mcp was not found and automatic installation failed.")
-        user_response = input("Do you want to continue anyway? (y/n): ").lower()
-        if user_response != 'y':
-            print("Setup aborted. Please install code-mcp on the remote server and try again.")
-            return 1
         
     # Check if code-mcp is installed on the remote server and install it if needed
     if not check_and_install_code_mcp(args.remote_host, args.code_mcp_path, control_path, args.ssh_key):
