@@ -200,7 +200,6 @@ def create_ssh_tunnel(remote_host, local_port, remote_port, control_path=None, s
         stderr=subprocess.PIPE
     )
     
-    # Wait for the tunnel to establish (increased time for slower connections)
     time.sleep(5)
     
     # Check if the tunnel process is still running
@@ -467,7 +466,7 @@ def main():
         print("Warning: Could not establish persistent SSH connection.")
         print("You may be prompted for your password multiple times.")
         control_path = None
-        
+    
     # Check if code-mcp is installed on the remote server and install it if needed
     if not check_and_install_code_mcp(args.remote_host, args.code_mcp_path, control_path, args.ssh_key):
         print("Warning: code-mcp was not found and automatic installation failed.")
