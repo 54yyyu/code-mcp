@@ -111,7 +111,12 @@ Note: All new installations automatically use the PATH-based approach.
 
 ### Remote Connectivity
 
-You can connect Claude Desktop to a code-mcp instance running on a remote server:
+You can connect Claude Desktop to a code-mcp instance running on a remote server.
+
+**Prerequisites:**
+- code-mcp must be installed on the remote server first
+- SSH access to the remote server
+- Python 3.10+ on both local and remote machines
 
 ```bash
 # Set up a remote connection (with default options)
@@ -135,7 +140,7 @@ The remote setup:
 3. Sets up an SSH tunnel to securely communicate with the remote server
 4. Configures Claude Desktop to use the remote connection
 
-This allows you to work with codebases on remote servers, including cloud VMs and containers.
+This allows you to work with codebases on remote servers, including cloud VMs and containers. When you're done, press Ctrl+C to terminate the SSH tunnel and clean up the configuration.
 
 ## Features
 
