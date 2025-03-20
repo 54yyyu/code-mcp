@@ -291,61 +291,6 @@ def update_claude_config(local_port, remote_project_path, code_mcp_path, client_
     # Write the config
     write_claude_config(config)
 
-def kill_remote_processes(remote_host, server_pid, remote_port, control_path=None, ssh_key=None):
-    """Kill the remote server process and any related processes"""
-    print(f"Terminating remote server process (PID: {server_pid}) and all its children...")
-    
-    # First try to find any processes using the port
-    port_check_cmd = f"lsof -i :{remote_port} | grep LISTEN | awk '{{print $2}}' || echo ''"
-    port_pids = run_ssh_command(
-        remote_host,
-        port_check_cmd,
-        control_path,
-        ssh_key,
-        timeout=5
-    )
-    
-    # Kill processes by port first (most reliable)
-    if port_pids and port_pids.strip():
-        for pid in port_pids.strip().split('\n'):
-            if pid:
-                run_ssh_command(
-                    remote_host,
-                    f"kill -9 {pid.strip()}",
-                    control_path,
-                    ssh_key,
-                    timeout=5
-                )
-        print(f"Terminated processes using port {remote_port}")
-    
-    # Now try to kill by PID
-    if server_pid:
-        # Find all child processes recursively
-        child_cmd = f"""
-        children() {{
-            local pid=$1
-            local children=$(pgrep -P $pid 2>/dev/null)
-            for child in $children; do
-                children $child
-                echo $child
-            done
-        }}
-        children {server_pid} || echo ''
-        """
-        child_pids = run_ssh_command(
-            remote_host,
-            child_cmd,
-            control_path,
-            ssh_key,
-            timeout=10
-        )
-        
-        # Kill children first if any were found
-        if child_pids and child_pids.strip():
-            for child_pid in child_pids.strip().split('\n'):
-                if child_pid.strip():
-                    run_ssh_command(
-                        remote_host,
 def check_and_install_code_mcp(remote_host, code_mcp_path, control_path=None, ssh_key=None):
     """Check if code-mcp is installed on the remote host and install it if needed"""
     print("Checking if code-mcp is installed on the remote server...")
@@ -415,7 +360,61 @@ def check_and_install_code_mcp(remote_host, code_mcp_path, control_path=None, ss
         print(f"Please install code-mcp manually on {remote_host}")
         return False
 
-
+def kill_remote_processes(remote_host, server_pid, remote_port, control_path=None, ssh_key=None):
+    """Kill the remote server process and any related processes"""
+    print(f"Terminating remote server process (PID: {server_pid}) and all its children...")
+    
+    # First try to find any processes using the port
+    port_check_cmd = f"lsof -i :{remote_port} | grep LISTEN | awk '{{print $2}}' || echo ''"
+    port_pids = run_ssh_command(
+        remote_host,
+        port_check_cmd,
+        control_path,
+        ssh_key,
+        timeout=5
+    )
+    
+    # Kill processes by port first (most reliable)
+    if port_pids and port_pids.strip():
+        for pid in port_pids.strip().split('\n'):
+            if pid:
+                run_ssh_command(
+                    remote_host,
+                    f"kill -9 {pid.strip()}",
+                    control_path,
+                    ssh_key,
+                    timeout=5
+                )
+        print(f"Terminated processes using port {remote_port}")
+    
+    # Now try to kill by PID
+    if server_pid:
+        # Find all child processes recursively
+        child_cmd = f"""
+        children() {{
+            local pid=$1
+            local children=$(pgrep -P $pid 2>/dev/null)
+            for child in $children; do
+                children $child
+                echo $child
+            done
+        }}
+        children {server_pid} || echo ''
+        """
+        child_pids = run_ssh_command(
+            remote_host,
+            child_cmd,
+            control_path,
+            ssh_key,
+            timeout=10
+        )
+        
+        # Kill children first if any were found
+        if child_pids and child_pids.strip():
+            for child_pid in child_pids.strip().split('\n'):
+                if child_pid.strip():
+                    run_ssh_command(
+                        remote_host,
                         f"kill -9 {child_pid.strip()} 2>/dev/null || true",
                         control_path,
                         ssh_key,
