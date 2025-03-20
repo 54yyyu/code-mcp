@@ -1,5 +1,14 @@
 # Code-MCP: Terminal and Code Integration for Claude AI
 
+```
+     ██████╗ ██████╗ ██████╗ ███████╗       ███╗   ███╗ ██████╗██████╗ 
+    ██╔════╝██╔═══██╗██╔══██╗██╔════╝       ████╗ ████║██╔════╝██╔══██╗
+    ██║     ██║   ██║██║  ██║█████╗  ████─  ██╔████╔██║██║     ██████╔╝
+    ██║     ██║   ██║██║  ██║██╔══╝         ██║╚██╔╝██║██║     ██╔═══╝ 
+    ╚██████╗╚██████╔╝██████╔╝███████╗       ██║ ╚═╝ ██║╚██████╗██║     
+     ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝       ╚═╝     ╚═╝ ╚═════╝╚═╝     
+```
+
 Code-MCP connects Claude AI to your development environment through the Model Context Protocol (MCP), enabling terminal commands and file operations through the AI interface.
 
 ## Features
@@ -10,6 +19,7 @@ Code-MCP connects Claude AI to your development environment through the Model Co
 - **Smart Editing**: Enhanced editing capabilities for code files
 - **Code Analysis**: Advanced pattern matching and function-level operations
 - **Productivity Tools**: Operate on your codebase with natural language instructions
+- **Remote Connectivity**: Connect to remote code-mcp instances over SSH
 
 ## Quick Installation
 
@@ -98,6 +108,34 @@ This will find your Claude Desktop configuration and update the command to use j
 instead of the full path, allowing it to work as long as code-mcp is in your PATH.
 
 Note: All new installations automatically use the PATH-based approach.
+
+### Remote Connectivity
+
+You can connect Claude Desktop to a code-mcp instance running on a remote server:
+
+```bash
+# Set up a remote connection (with default options)
+code-mcp-remote --remote-host user@example.com --remote-project-path /path/to/remote/project
+
+# Set up with custom port configuration
+code-mcp-remote --remote-host user@example.com \
+                --remote-project-path /path/to/remote/project \
+                --local-port 3000 \
+                --remote-port 5000
+
+# Use a specific SSH key
+code-mcp-remote --remote-host user@example.com \
+                --remote-project-path /path/to/remote/project \
+                --ssh-key ~/.ssh/id_ed25519
+```
+
+The remote setup:
+1. Uploads the bridge server script to the remote server
+2. Starts the bridge server on the remote machine
+3. Sets up an SSH tunnel to securely communicate with the remote server
+4. Configures Claude Desktop to use the remote connection
+
+This allows you to work with codebases on remote servers, including cloud VMs and containers.
 
 ## Features
 
