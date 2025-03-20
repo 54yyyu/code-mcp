@@ -526,7 +526,7 @@ def main():
         
         # Run the command without trying to capture PID
         try:
-            run_ssh_command(args.remote_host, cmd, control_path, args.ssh_key, timeout=15)
+            run_ssh_command(args.remote_host, cmd, control_path, args.ssh_key, timeout=5)
             print("Bridge server started successfully")
             
             # Wait a moment for the process to start properly
