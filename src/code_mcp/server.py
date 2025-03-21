@@ -571,7 +571,8 @@ def edit_file(
 # Helper functions for smart_edit
 def find_function_in_file(content: str, function_name: str) -> Optional[Tuple[int, int, str]]:
     """
-    Find a function definition in file content.
+    Find a function definition in file content with improved handling of
+    docstrings, nested functions, and various coding styles.
     
     Args:
         content: File content to search
@@ -582,61 +583,98 @@ def find_function_in_file(content: str, function_name: str) -> Optional[Tuple[in
     """
     lines = content.splitlines()
     
-    # Find the start of the function
-    func_pattern = fr"^\s*def\s+{re.escape(function_name)}\s*\("
-    func_start = None
+    # Find the start of the function with multiple patterns
+    func_patterns = [
+        rf"^\s*def\s+{re.escape(function_name)}\s*\(",  # Regular function
+        rf"^\s*async\s+def\s+{re.escape(function_name)}\s*\(",  # Async function
+        rf"^\s*class\s+{re.escape(function_name)}\s*\(?",  # Class definition
+    ]
     
+    func_start = None
     for i, line in enumerate(lines):
-        if re.match(func_pattern, line):
+        if any(re.match(pattern, line) for pattern in func_patterns):
             func_start = i
             break
     
     if func_start is None:
         return None
     
-    # Find the end of the function by tracking indentation
+    # Find the base indentation level
     base_indent = len(lines[func_start]) - len(lines[func_start].lstrip())
-    func_end = func_start
     
+    # Track indentation state, including nested structures
     in_docstring = False
     docstring_delimiter = None
+    bracket_stack = []  # For tracking brackets/parentheses
     
+    # Check opening line for brackets
+    for char in lines[func_start]:
+        if char in "({[":
+            bracket_stack.append(char)
+        elif char in ")}]":
+            if bracket_stack and ((char == ')' and bracket_stack[-1] == '(') or
+                               (char == '}' and bracket_stack[-1] == '{') or
+                               (char == ']' and bracket_stack[-1] == '[')):
+                bracket_stack.pop()
+    
+    func_end = func_start
+    
+    # Process subsequent lines
     for i in range(func_start + 1, len(lines)):
+        line = lines[i]
+        stripped_line = line.strip()
+        
         # Skip empty lines
-        if not lines[i].strip():
+        if not stripped_line:
             func_end = i
             continue
         
-        # Check for docstring delimiters
-        line = lines[i].strip()
-        if not in_docstring and (line.startswith('"""') or line.startswith("'''")):
+        # Handle docstrings
+        if not in_docstring and (stripped_line.startswith('"""') or stripped_line.startswith("'''")):
             in_docstring = True
-            docstring_delimiter = line[:3]
+            docstring_delimiter = stripped_line[:3]
             
-            # Handle single-line docstrings
-            if line.endswith(docstring_delimiter) and len(line) > 3:
+            # Check for single-line docstrings
+            if stripped_line.endswith(docstring_delimiter) and len(stripped_line) > 3:
                 in_docstring = False
+            
+            func_end = i
+            continue
+        
+        elif in_docstring:
+            if stripped_line.endswith(docstring_delimiter):
+                in_docstring = False
+            
+            func_end = i
+            continue
+        
+        # Update bracket stack
+        for char in stripped_line:
+            if char in "({[":
+                bracket_stack.append(char)
+            elif char in ")}]":
+                if bracket_stack and ((char == ')' and bracket_stack[-1] == '(') or
+                                   (char == '}' and bracket_stack[-1] == '{') or
+                                   (char == ']' and bracket_stack[-1] == '[')):
+                    bracket_stack.pop()
+        
+        # Check indentation only if not in a docstring and not in open brackets
+        curr_indent = len(line) - len(line.lstrip())
+        if not in_docstring and not bracket_stack and curr_indent <= base_indent:
+            # Check if this is a decorator for another function
+            if stripped_line.startswith('@'):
                 func_end = i
                 continue
-        
-        elif in_docstring and docstring_delimiter:
-            if line.endswith(docstring_delimiter):
-                in_docstring = False
-            func_end = i
-            continue
-        
-        # If we find a line with same or less indentation, we've left the function
-        curr_indent = len(lines[i]) - len(lines[i].lstrip())
-        if not in_docstring and curr_indent <= base_indent:
+                
+            # We've reached a line with same or less indentation
             break
         
         func_end = i
     
-    # Extract the function content
+    # Extract function content
     func_content = '\n'.join(lines[func_start:func_end + 1])
     
     return func_start, func_end, func_content
-
 
 def find_pattern_in_file(
     content: str, 
@@ -737,17 +775,21 @@ def find_pattern_in_file(
         return f"Error finding pattern: {str(e)}"
 
 
-def suggest_similar_patterns(content: str, pattern: str) -> List[Tuple[int, str]]:
+def suggest_similar_patterns(content: str, pattern: str, threshold: float = 0.6) -> str:
     """
-    Suggest similar patterns in the content.
+    Suggest similar patterns in the content with confidence levels.
     
     Args:
-        content: File content to search
+        content: File content to search in
         pattern: Pattern that wasn't found
+        threshold: Similarity threshold (0.0 to 1.0)
         
     Returns:
-        List of (line_no, line_text) for similar lines
+        Formatted string with suggestions
     """
+    content_lines = content.splitlines()
+    pattern_lines = pattern.splitlines()
+    
     # Extract significant words from the pattern
     words = re.findall(r'\w+', pattern)
     significant_words = [word for word in words if len(word) >= 4]
@@ -756,27 +798,51 @@ def suggest_similar_patterns(content: str, pattern: str) -> List[Tuple[int, str]
         significant_words = [word for word in words if len(word) >= 2]
     
     if not significant_words:
-        return []
+        return ""
     
-    # Look for lines containing these words
-    lines = content.splitlines()
+    # Find lines containing significant words
     matches = []
+    for i, line in enumerate(content_lines):
+        line_lower = line.lower()
+        matching_words = sum(1 for word in significant_words if word.lower() in line_lower)
+        
+        if matching_words > 0:
+            # Calculate confidence score
+            confidence = matching_words / len(significant_words)
+            matches.append((i + 1, line, confidence))
     
-    for i, line in enumerate(lines):
-        for word in significant_words:
-            if word.lower() in line.lower():
-                matches.append((i + 1, line.strip()))
-                break
+    # Find similar blocks for multi-line patterns
+    if len(pattern_lines) > 1:
+        for i in range(len(content_lines) - len(pattern_lines) + 1):
+            content_block = '\n'.join(content_lines[i:i + len(pattern_lines)])
+            similarity = difflib.SequenceMatcher(None, content_block, pattern).ratio()
+            
+            if similarity > threshold:
+                matches.append((i + 1, f"[Block match] {content_lines[i]}", similarity))
     
-    # Sort by relevance (number of matching words)
-    def match_score(line_info):
-        line_no, text = line_info
-        score = sum(1 for word in significant_words if word.lower() in text.lower())
-        return score
+    # Sort by confidence score
+    matches.sort(key=lambda x: x[2], reverse=True)
     
-    matches.sort(key=match_score, reverse=True)
+    # Format results with confidence levels
+    results = []
     
-    return matches[:10]  # Return top 10 matches
+    # High confidence matches
+    high_conf = [m for m in matches if m[2] > 0.8][:3]
+    if high_conf:
+        results.append("High confidence matches:")
+        for line_no, text, _ in high_conf:
+            results.append(f"  Line {line_no}: {text}")
+    
+    # Medium confidence matches
+    med_conf = [m for m in matches if 0.5 < m[2] <= 0.8][:3]
+    if med_conf:
+        if results:
+            results.append("")
+        results.append("Medium confidence matches:")
+        for line_no, text, _ in med_conf:
+            results.append(f"  Line {line_no}: {text}")
+    
+    return "\n".join(results)
 
 @mcp.tool()
 def smart_edit(

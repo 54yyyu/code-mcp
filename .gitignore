@@ -42,3 +42,6 @@ ENV/
 # OS specific
 .DS_Store
 Thumbs.db
+
+# Test scripts
+test_scripts/
