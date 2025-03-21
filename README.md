@@ -1,14 +1,5 @@
 # Code-MCP: Terminal and Code Integration for Claude AI
 
-```
-     ██████╗ ██████╗ ██████╗ ███████╗       ███╗   ███╗ ██████╗██████╗ 
-    ██╔════╝██╔═══██╗██╔══██╗██╔════╝       ████╗ ████║██╔════╝██╔══██╗
-    ██║     ██║   ██║██║  ██║█████╗  ████─  ██╔████╔██║██║     ██████╔╝
-    ██║     ██║   ██║██║  ██║██╔══╝         ██║╚██╔╝██║██║     ██╔═══╝ 
-    ╚██████╗╚██████╔╝██████╔╝███████╗       ██║ ╚═╝ ██║╚██████╗██║     
-     ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝       ╚═╝     ╚═╝ ╚═════╝╚═╝     
-```
-
 Code-MCP connects Claude AI to your development environment through the Model Context Protocol (MCP), enabling terminal commands and file operations through the AI interface.
 
 ## Features
@@ -19,7 +10,6 @@ Code-MCP connects Claude AI to your development environment through the Model Co
 - **Smart Editing**: Enhanced editing capabilities for code files
 - **Code Analysis**: Advanced pattern matching and function-level operations
 - **Productivity Tools**: Operate on your codebase with natural language instructions
-- **Remote Connectivity**: Connect to remote code-mcp instances over SSH
 
 ## Quick Installation
 
@@ -108,58 +98,6 @@ This will find your Claude Desktop configuration and update the command to use j
 instead of the full path, allowing it to work as long as code-mcp is in your PATH.
 
 Note: All new installations automatically use the PATH-based approach.
-
-### Remote Connectivity
-
-You can connect Claude Desktop to a code-mcp instance running on a remote server.
-
-**Prerequisites:**
-- SSH access to the remote server
-- Python 3.10+ on both local and remote machines
-
-The setup script will automatically check if code-mcp is installed on the remote server and install it if needed.
-
-#### One-line installation
-
-```bash
-# Install and set up remote connection with one command
-curl -sSL https://raw.githubusercontent.com/54yyyu/code-mcp/remote-edit/remote-install.sh | bash -s -- --remote-host user@hostname
-
-# With additional options
-curl -sSL https://raw.githubusercontent.com/54yyyu/code-mcp/remote-edit/remote-install.sh | bash -s -- \
-  --remote-host user@hostname \
-  --remote-project-path /path/to/project \
-  --local-port 3000 \
-  --remote-port 5000 \
-  --ssh-key ~/.ssh/id_ed25519
-```
-
-This installs code-mcp locally if needed, configures remote connection, and sets up Claude Desktop.
-
-```bash
-# Set up a remote connection (with default options)
-code-mcp-remote --remote-host user@example.com --remote-project-path /path/to/remote/project
-
-# Set up with custom port configuration
-code-mcp-remote --remote-host user@example.com \
-                --remote-project-path /path/to/remote/project \
-                --local-port 3000 \
-                --remote-port 5000
-
-# Use a specific SSH key
-code-mcp-remote --remote-host user@example.com \
-                --remote-project-path /path/to/remote/project \
-                --ssh-key ~/.ssh/id_ed25519
-```
-
-The remote setup:
-1. Checks if code-mcp is installed on the remote server and installs it if needed
-2. Uploads the bridge server script to the remote server
-3. Starts the bridge server on the remote machine
-4. Sets up an SSH tunnel to securely communicate with the remote server
-5. Configures Claude Desktop to use the remote connection
-
-This allows you to work with codebases on remote servers, including cloud VMs and containers. When you're done, press Ctrl+C to terminate the SSH tunnel and clean up the configuration.
 
 ## Features
 
