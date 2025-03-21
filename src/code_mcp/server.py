@@ -1606,45 +1606,6 @@ def code_operations_strategy() -> str:
    - Using destructive git commands (reset, clean)
 """
 
-def main():
-    """Run the MCP server"""
-    import argparse
-    
-    # Create argument parser
-    parser = argparse.ArgumentParser(description="Code-MCP: Terminal and Code Integration for Claude AI")
-    parser.add_argument("project_root", nargs="?", default=None, 
-                        help="Path to the project root directory. Defaults to current directory if not provided.")
-    parser.add_argument("--version", action="store_true", help="Show version and exit")
-    
-    # Parse arguments
-    args = parser.parse_args()
-    
-    # Handle version flag
-    if args.version:
-        import code_mcp
-        print(f"Code-MCP version {code_mcp.__version__}")
-        return 0
-    
-    # Set the project root global variable
-    global PROJECT_ROOT
-    if args.project_root:
-        PROJECT_ROOT = Path(args.project_root).absolute()
-        print(f"Using provided project root: {PROJECT_ROOT}")
-    else:
-        PROJECT_ROOT = Path.cwd().absolute()
-        print(f"No project root provided, using current directory: {PROJECT_ROOT}")
-    
-    # Validate project root
-    if not PROJECT_ROOT.is_dir():
-        print(f"Error: Project root directory does not exist: {PROJECT_ROOT}")
-        return 1
-    
-    # Start the MCP server
-    print(f"Starting CodeMCP server with project root: {PROJECT_ROOT}")
-    mcp.run()
-    return 0
-if __name__ == "__main__":
-    main()
 # Basic tool for Jupyter notebook reading (without execution)
 @mcp.tool()
 def jupyter_read_notebook(ctx: Context, notebook_path: str) -> str:
@@ -2063,3 +2024,43 @@ def jupyter_operations_strategy() -> str:
    - Add markdown cells to document your work
    - Use descriptive cell types (code for executable code, markdown for documentation)
 """
+
+def main():
+    """Run the MCP server"""
+    import argparse
+    
+    # Create argument parser
+    parser = argparse.ArgumentParser(description="Code-MCP: Terminal and Code Integration for Claude AI")
+    parser.add_argument("project_root", nargs="?", default=None, 
+                        help="Path to the project root directory. Defaults to current directory if not provided.")
+    parser.add_argument("--version", action="store_true", help="Show version and exit")
+    
+    # Parse arguments
+    args = parser.parse_args()
+    
+    # Handle version flag
+    if args.version:
+        import code_mcp
+        print(f"Code-MCP version {code_mcp.__version__}")
+        return 0
+    
+    # Set the project root global variable
+    global PROJECT_ROOT
+    if args.project_root:
+        PROJECT_ROOT = Path(args.project_root).absolute()
+        print(f"Using provided project root: {PROJECT_ROOT}")
+    else:
+        PROJECT_ROOT = Path.cwd().absolute()
+        print(f"No project root provided, using current directory: {PROJECT_ROOT}")
+    
+    # Validate project root
+    if not PROJECT_ROOT.is_dir():
+        print(f"Error: Project root directory does not exist: {PROJECT_ROOT}")
+        return 1
+    
+    # Start the MCP server
+    print(f"Starting CodeMCP server with project root: {PROJECT_ROOT}")
+    mcp.run()
+    return 0
+if __name__ == "__main__":
+    main()
