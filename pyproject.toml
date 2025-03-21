@@ -5,7 +5,7 @@ description = "Terminal and code integration through the Model Context Protocol"
 readme = "README.md"
 requires-python = ">=3.10"
 authors = [
-    {name = "54yyyu", email = "you@example.com"}
+    {name = "54yyyu", email = "54yyyu@gmail.com"}
 ]
 license = {text = "MIT"}
 classifiers = [
@@ -15,11 +15,14 @@ classifiers = [
 ]
 dependencies = [
     "mcp[cli]>=1.3.0",
+    "httpx>=0.24.0",
+    "psutil>=5.9.0",
 ]
 
 [project.scripts]
 code-mcp = "code_mcp.server:main"
 code-mcp-setup = "code_mcp.setup_helper:main"
+code-mcp-remote = "code_mcp.remote.ssh_bridge_setup:main"
 
 [build-system]
 requires = ["setuptools>=61.0", "wheel"]
