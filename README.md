@@ -47,6 +47,25 @@ pip install git+https://github.com/54yyyu/code-mcp.git
 uv pip install git+https://github.com/54yyyu/code-mcp.git
 ```
 
+### Install with Remote Connectivity Support
+
+To install Code-MCP with remote connectivity support:
+
+```bash
+# Install with pip from the remote-edit branch
+pip install git+https://github.com/54yyyu/code-mcp.git@remote-edit
+
+# Or with uv (recommended)
+uv pip install git+https://github.com/54yyyu/code-mcp.git@remote-edit
+```
+
+You can also use the one-line installer that will install from the remote-edit branch:
+
+```bash
+# One-line installer for Remote-enabled version
+curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/remote-edit/install.sh | sh
+```
+
 ### For Developers
 
 If you're developing Code-MCP, clone the repository and install in development mode:
