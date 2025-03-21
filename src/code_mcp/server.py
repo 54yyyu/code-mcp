@@ -1645,3 +1645,421 @@ def main():
     return 0
 if __name__ == "__main__":
     main()
+# Basic tool for Jupyter notebook reading (without execution)
+@mcp.tool()
+def jupyter_read_notebook(ctx: Context, notebook_path: str) -> str:
+    """
+    Read a Jupyter notebook and display its content.
+    
+    Args:
+        notebook_path: Path to the notebook file (relative to project root or absolute)
+    """
+    from .jupyter_utils import read_notebook, get_notebook_cells, extract_cell_content, get_cell_type
+    
+    path = Path(notebook_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access notebook outside project directory: {path}"
+    
+    if not path.exists():
+        return f"Error: Notebook file does not exist: {path}"
+    
+    if not path.suffix == '.ipynb':
+        return f"Error: Not a Jupyter notebook file: {path}"
+    
+    try:
+        # Read the notebook as JSON
+        notebook = read_notebook(path)
+        
+        # Format the notebook contents for human-readable display
+        cells = get_notebook_cells(notebook)
+        
+        output = [f"Jupyter Notebook: {path.name}"]
+        output.append(f"Number of cells: {len(cells)}")
+        output.append("")
+        
+        # Add metadata 
+        metadata = notebook.get('metadata', {})
+        kernel_info = metadata.get('kernelspec', {})
+        kernel_name = kernel_info.get('display_name', 'Unknown')
+        output.append(f"Kernel: {kernel_name}")
+        output.append("")
+        
+        # Include cells with cell numbers
+        for i, cell in enumerate(cells):
+            cell_type = get_cell_type(cell)
+            output.append(f"--- Cell [{i}] ({cell_type}) ---")
+            
+            # Get cell content
+            content = extract_cell_content(cell, include_outputs=True)
+            output.append(content)
+            output.append("")
+        
+        return "\n".join(output)
+    
+    except Exception as e:
+        logger.error(f"Error reading notebook {path}: {str(e)}")
+        return f"Error reading notebook: {str(e)}"
+
+# Smart edit integration for modifying notebook cells
+@mcp.tool()
+def jupyter_smart_edit_cell(ctx: Context, notebook_path: str, cell_index: int, 
+                          operation: str = "preview", pattern: str = None, 
+                          new_content: str = None, confirm: bool = False) -> str:
+    """
+    Use smart_edit capabilities to modify a notebook cell.
+    
+    Args:
+        notebook_path: Path to the notebook file
+        cell_index: Index of the cell to modify
+        operation: Smart edit operation ('preview', 'replace', etc.)
+        pattern: Pattern to find (when applicable)
+        new_content: New content (when applicable)
+        confirm: Set to true to execute the edit
+    """
+    from .jupyter_utils import read_notebook, get_cell_by_index, modify_cell, save_notebook, extract_cell_content
+    
+    path = Path(notebook_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access notebook outside project directory: {path}"
+    
+    if not path.exists():
+        return f"Error: Notebook file does not exist: {path}"
+    
+    try:
+        # Read the notebook
+        notebook = read_notebook(path)
+        
+        # Check if the cell exists
+        cell = get_cell_by_index(notebook, cell_index)
+        if cell is None:
+            return f"Error: Cell index {cell_index} not found in notebook"
+        
+        # Get the original cell content and type
+        cell_type = cell.get('cell_type', 'code')
+        original_content = extract_cell_content(cell)
+        
+        # Create a temporary file for smart_edit
+        import tempfile
+        import os
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".py", mode="w+") as temp:
+            temp.write(original_content)
+            temp.flush()
+            temp_path = temp.name
+        
+        try:
+            # Apply smart_edit to the temp file
+            if operation == "preview":
+                # Just preview the cell
+                return f"Cell [{cell_index}] ({cell_type}) content:\n\n```\n{original_content}\n```"
+            
+            # Use smart_edit with the temporary file
+            smart_edit_result = smart_edit(
+                ctx,
+                file_path=temp_path,
+                operation=operation,
+                pattern=pattern,
+                new_content=new_content,
+                confirm=True  # Always confirm for the temp file
+            )
+            
+            # Read the modified content
+            with open(temp_path, 'r') as f:
+                modified_content = f.read()
+            
+            # If this is just a preview, show the diff
+            if not confirm:
+                diff = generate_diff(original_content, modified_content, 
+                                    f"Cell {cell_index} (before)", 
+                                    f"Cell {cell_index} (after)")
+                
+                return f"Preview of changes to cell {cell_index} in {path}:\n\n```diff\n{diff}\n```\n\nTo apply these changes, set confirm=True"
+            
+            # Apply the changes to the notebook
+            updated_notebook = modify_cell(notebook, cell_index, modified_content, None)
+            save_notebook(updated_notebook, path)
+            
+            return f"Successfully updated cell {cell_index} in {path}"
+        
+        finally:
+            # Clean up the temporary file
+            try:
+                os.unlink(temp_path)
+            except:
+                pass
+    
+    except Exception as e:
+        logger.error(f"Error applying smart_edit to notebook cell: {str(e)}")
+        return f"Error editing notebook cell: {str(e)}"
+
+# Tool for adding cells to notebooks
+@mcp.tool() 
+def jupyter_add_cell(ctx: Context, notebook_path: str, cell_type: str, 
+                   content: str, position: int = -1, confirm: bool = False) -> str:
+    """
+    Add a new cell to a Jupyter notebook.
+    
+    Args:
+        notebook_path: Path to the notebook file (relative to project root or absolute)
+        cell_type: Type of cell to add ('code', 'markdown', or 'raw')
+        content: Content of the cell  
+        position: Position to insert the cell (-1 for end of notebook)
+        confirm: Set to true to execute the edit, false to preview only
+    """
+    from .jupyter_utils import read_notebook, add_cell, save_notebook, create_new_notebook, get_notebook_cells
+    
+    path = Path(notebook_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access notebook outside project directory: {path}"
+    
+    # Validate cell type
+    valid_cell_types = ['code', 'markdown', 'raw']
+    if cell_type not in valid_cell_types:
+        return f"Error: Invalid cell type '{cell_type}'. Must be one of: {', '.join(valid_cell_types)}"
+    
+    try:
+        # If file doesn't exist, create a new notebook
+        if not path.exists():
+            # Create directory if it doesn't exist
+            path.parent.mkdir(parents=True, exist_ok=True)
+            
+            # Create a new notebook
+            notebook = create_new_notebook()
+            
+            preview_message = f"Will create new notebook: {path}"
+        else:
+            # Read existing notebook
+            notebook = read_notebook(path)
+            
+            # Check position validity
+            cells = get_notebook_cells(notebook)
+            cell_count = len(cells)
+            
+            if position >= 0 and position > cell_count:
+                position = cell_count  # Adjust to end if out of range
+            
+            position_desc = "at end" if position < 0 else f"at position {position}"
+            preview_message = f"Will add {cell_type} cell {position_desc} in notebook: {path}"
+        
+        # Generate the modified notebook
+        updated_notebook = add_cell(notebook, cell_type, content, position)
+        
+        # Preview or execute based on confirm flag
+        if not confirm:
+            preview = [preview_message]
+            preview.append(f"\nCell content preview:\n```\n{content[:200]}")
+            if len(content) > 200:
+                preview.append("... (content truncated) ...")
+            preview.append("```\n")
+            preview.append("To apply these changes, set confirm=True")
+            
+            return "\n".join(preview)
+        
+        # Execute the edit
+        save_notebook(updated_notebook, path)
+        
+        logger.info(f"Added {cell_type} cell to {path}")
+        return f"Successfully added {cell_type} cell to notebook: {path}"
+    
+    except Exception as e:
+        logger.error(f"Error adding cell to notebook {path}: {str(e)}")
+        return f"Error adding cell to notebook: {str(e)}"
+
+# Tool for deleting cells
+@mcp.tool()
+def jupyter_delete_cell(ctx: Context, notebook_path: str, cell_index: int, 
+                      confirm: bool = False) -> str:
+    """
+    Delete a cell from a Jupyter notebook.
+    
+    Args:
+        notebook_path: Path to the notebook file (relative to project root or absolute)
+        cell_index: Index of the cell to delete
+        confirm: Set to true to execute the edit, false to preview only
+    """
+    from .jupyter_utils import read_notebook, get_cell_by_index, delete_cell, save_notebook, extract_cell_content
+    
+    path = Path(notebook_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access notebook outside project directory: {path}"
+    
+    if not path.exists():
+        return f"Error: Notebook file does not exist: {path}"
+    
+    try:
+        # Read the notebook
+        notebook = read_notebook(path)
+        
+        # Check if the cell exists
+        cell = get_cell_by_index(notebook, cell_index)
+        if cell is None:
+            return f"Error: Cell index {cell_index} not found in notebook"
+        
+        # Get the original cell content and type for the preview
+        cell_type = cell.get('cell_type', 'code')
+        content = extract_cell_content(cell)
+        
+        # Generate the modified notebook
+        updated_notebook = delete_cell(notebook, cell_index)
+        
+        # Preview or execute based on confirm flag
+        if not confirm:
+            preview = [f"Will delete cell {cell_index} ({cell_type}) from notebook: {path}"]
+            preview.append(f"\nCell content to be deleted:\n```\n{content[:200]}")
+            if len(content) > 200:
+                preview.append("... (content truncated) ...")
+            preview.append("```\n")
+            preview.append("To confirm deletion, set confirm=True")
+            
+            return "\n".join(preview)
+        
+        # Execute the edit
+        save_notebook(updated_notebook, path)
+        
+        logger.info(f"Deleted cell {cell_index} from {path}")
+        return f"Successfully deleted cell {cell_index} from notebook: {path}"
+    
+    except Exception as e:
+        logger.error(f"Error deleting cell from notebook {path}: {str(e)}")
+        return f"Error deleting cell from notebook: {str(e)}"
+
+# Resource for accessing notebook content
+@mcp.resource("jupyter://{notebook_path}")
+def get_notebook(notebook_path: str) -> str:
+    """Get the contents of a Jupyter notebook (.ipynb file)."""
+    from .jupyter_utils import read_notebook, get_notebook_cells, extract_cell_content, get_cell_type
+    
+    path = Path(notebook_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access notebook outside project directory: {path}"
+    
+    if not path.exists():
+        return f"Error: Notebook file does not exist: {path}"
+    
+    if not path.suffix == '.ipynb':
+        return f"Error: Not a Jupyter notebook file: {path}"
+    
+    try:
+        # Read the notebook as JSON
+        notebook = read_notebook(path)
+        
+        # Format the notebook contents for human-readable display
+        cells = get_notebook_cells(notebook)
+        
+        output = [f"Jupyter Notebook: {path.name}"]
+        output.append(f"Number of cells: {len(cells)}")
+        output.append("")
+        
+        # Add metadata 
+        metadata = notebook.get('metadata', {})
+        kernel_info = metadata.get('kernelspec', {})
+        kernel_name = kernel_info.get('display_name', 'Unknown')
+        output.append(f"Kernel: {kernel_name}")
+        output.append("")
+        
+        # Include cells with cell numbers
+        for i, cell in enumerate(cells):
+            cell_type = get_cell_type(cell)
+            output.append(f"--- Cell [{i}] ({cell_type}) ---")
+            
+            # Get cell content
+            content = extract_cell_content(cell, include_outputs=True)
+            output.append(content)
+            output.append("")
+        
+        return "\n".join(output)
+    
+    except Exception as e:
+        logger.error(f"Error reading notebook {path}: {str(e)}")
+        return f"Error reading notebook: {str(e)}"
+
+# Resource for accessing a specific cell
+@mcp.resource("jupyter://{notebook_path}/cell/{cell_index}")
+def get_notebook_cell(notebook_path: str, cell_index: int) -> str:
+    """Get a specific cell from a Jupyter notebook."""
+    from .jupyter_utils import read_notebook, get_cell_by_index, extract_cell_content
+    
+    path = Path(notebook_path)
+    if not path.is_absolute():
+        path = PROJECT_ROOT / path
+    
+    # Security check
+    if not is_safe_path(path):
+        return f"Error: Cannot access notebook outside project directory: {path}"
+    
+    if not path.exists():
+        return f"Error: Notebook file does not exist: {path}"
+    
+    if not path.suffix == '.ipynb':
+        return f"Error: Not a Jupyter notebook file: {path}"
+    
+    try:
+        # Read the notebook
+        notebook = read_notebook(path)
+        
+        # Get the specific cell
+        cell = get_cell_by_index(notebook, cell_index)
+        if cell is None:
+            return f"Error: Cell index {cell_index} not found in notebook"
+        
+        # Format cell content
+        cell_type = cell.get('cell_type', 'unknown')
+        content = extract_cell_content(cell, include_outputs=True)
+        
+        output = [f"Cell [{cell_index}] ({cell_type}) from {path.name}:"]
+        output.append("")
+        output.append(content)
+        
+        return "\n".join(output)
+    
+    except Exception as e:
+        logger.error(f"Error reading cell {cell_index} from notebook {path}: {str(e)}")
+        return f"Error reading notebook cell: {str(e)}"
+
+
+@mcp.prompt()
+def jupyter_operations_strategy() -> str:
+    """Defines the preferred strategy for working with Jupyter notebooks"""
+    return """When working with Jupyter notebooks:
+
+1. First explore the notebook structure using jupyter_read_notebook().
+
+2. For basic operations:
+   - Use jupyter_add_cell() to add new cells (code, markdown, etc.)
+   - Use jupyter_smart_edit_cell() to edit existing cells using smart_edit capabilities
+   - Use jupyter_delete_cell() to remove cells
+
+3. For content exploration:
+   - Use the resource jupyter://path/to/notebook to view the whole notebook
+   - Use jupyter://path/to/notebook/cell/0 to view a specific cell (where 0 is the cell index)
+
+4. Working with code cells:
+   - Take advantage of jupyter_smart_edit_cell() to leverage code-mcp's powerful code editing features
+   - You can use pattern matching, replacement, and other smart_edit operations on code cells
+
+5. Always follow these best practices:
+   - Preview operations before confirming them (use confirm=False first)
+   - Remember that cell indices are 0-based (first cell is index 0)
+   - Add markdown cells to document your work
+   - Use descriptive cell types (code for executable code, markdown for documentation)
+"""
