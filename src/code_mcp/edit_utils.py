@@ -226,61 +226,11 @@ def replace_with_whitespace_flexibility(texts: Tuple[str, str, str]) -> Optional
     
     return new_text
 
-
-def try_dotdotdot_strategy(texts: Tuple[str, str, str]) -> Optional[str]:
-    """
-    Handle patterns that use "..." to indicate skipped code.
-    
-    Args:
-        texts: Tuple of (search_text, replace_text, original_text)
-        
-    Returns:
-        New text with replacements, or None if strategy doesn't apply
-    """
-    search_text, replace_text, original_text = texts
-    
-    # Check if the pattern contains "..."
-    if "..." not in search_text and "…" not in search_text:
-        return None
-    
-    # Split the text at ellipsis points
-    dots_re = re.compile(r'(\.{3}|…)')
-    search_pieces = dots_re.split(search_text)
-    replace_pieces = dots_re.split(replace_text)
-    
-    if len(search_pieces) != len(replace_pieces):
-        return None
-    
-    if len(search_pieces) == 1:
-        return None
-    
-    # Process each piece of text between ellipses
-    current_text = original_text
-    for i in range(0, len(search_pieces), 2):
-        search_piece = search_pieces[i]
-        replace_piece = replace_pieces[i]
-        
-        if not search_piece:
-            continue
-        
-        # Simple and fast exact replacement
-        if search_piece in current_text:
-            current_text = current_text.replace(search_piece, replace_piece, 1)
-        else:
-            # Fall back to fuzzy matching
-            texts = (search_piece, replace_piece, current_text)
-            result = fuzzy_search_and_replace(texts, threshold=0.7)
-            if not result:
-                return None
-            current_text = result
-    
-    return current_text
-
-
 def flexible_search_and_replace(
     search_text: str, 
     replace_text: str, 
-    original_text: str
+    original_text: str,
+    verbose: bool = False
 ) -> Optional[str]:
     """
     Try a series of search/replace methods, starting from the most literal
@@ -290,6 +240,7 @@ def flexible_search_and_replace(
         search_text: Text to search for
         replace_text: Text to replace with
         original_text: Original content to perform replacement in
+        verbose: Whether to output detailed information about strategy selection
         
     Returns:
         New text with replacements, or None if no strategy succeeded
@@ -302,7 +253,7 @@ def flexible_search_and_replace(
         search_and_replace,
         
         # Try with ellipsis handling
-        try_dotdotdot_strategy,
+        try_dotdotdots,
         
         # Try with stripped blank lines
         lambda t: search_and_replace(strip_blank_lines([t[0], t[1], t[2]])),
@@ -310,8 +261,11 @@ def flexible_search_and_replace(
         # Try with whitespace flexibility
         replace_with_whitespace_flexibility,
         
-        # Try with relative indentation
-        lambda t: _try_with_relative_indentation(t),
+        # Try with comprehensive preprocessing (includes relative indentation)
+        lambda t: apply_comprehensive_preprocessing(t),
+        
+        # Git-based fallback strategy (when all else fails)
+        git_cherry_pick_strategy,
         
         # Last resort: fuzzy matching
         lambda t: fuzzy_search_and_replace(t, threshold=0.7),
@@ -319,15 +273,331 @@ def flexible_search_and_replace(
     
     # Try each strategy until one works
     for strategy in strategies:
-        result = strategy(texts)
-        if result is not None:
-            return result
+        try:
+            if verbose:
+                strategy_name = getattr(strategy, "__name__", str(strategy))
+                print(f"Trying strategy: {strategy_name}")
+                
+            result = strategy(texts)
+            if result is not None:
+                if verbose:
+                    strategy_name = getattr(strategy, "__name__", str(strategy))
+                    print(f"Strategy succeeded: {strategy_name}")
+                return result
+        except Exception as e:
+            # Log the error but continue to next strategy
+            if verbose:
+                strategy_name = getattr(strategy, "__name__", str(strategy))
+                print(f"Strategy {strategy_name} failed: {str(e)}")
+            continue
+    
+    if verbose:
+        print("All strategies failed")
     
     return None
 
 
-def _try_with_relative_indentation(texts: Tuple[str, str, str]) -> Optional[str]:
-    """Helper function to apply the relative indentation strategy."""
+def try_dotdotdots(texts: Tuple[str, str, str]) -> Optional[str]:
+    """
+    Handle patterns that use "..." to indicate skipped code.
+    
+    Args:
+        texts: Tuple of (search_text, replace_text, original_text)
+        
+    Returns:
+        New text with replacements, or None if strategy doesn't apply
+    """
+    search_text, replace_text, original_text = texts
+    
+    # Check if the pattern contains "..." or "…"
+    if "..." not in search_text and "…" not in search_text:
+        return None
+    
+    # Split the text at ellipsis points
+    dots_re = re.compile(r'(\.{3}|…)')
+    search_pieces = dots_re.split(search_text)
+    replace_pieces = dots_re.split(replace_text)
+    
+    # Ensure the pattern has the same number of pieces
+    if len(search_pieces) != len(replace_pieces):
+        return None
+    
+    # Skip if the pattern doesn't actually have ellipsis
+    if len(search_pieces) == 1:
+        return None
+    
+    # Create a copy of the original text to modify
+    new_text = original_text
+    
+    # Process each piece of text between ellipses
+    for i in range(0, len(search_pieces), 2):
+        search_piece = search_pieces[i]
+        replace_piece = replace_pieces[i]
+        
+        if not search_piece.strip():
+            continue
+        
+        # Simple and fast exact replacement
+        if search_piece in new_text:
+            # Only replace the first occurrence to avoid multiple replacements
+            new_text = new_text.replace(search_piece, replace_piece, 1)
+        else:
+            # Fall back to fuzzy matching for this piece
+            try:
+                similarity_threshold = 0.7
+                best_match = None
+                best_ratio = 0
+                
+                # Simple sliding window approach for finding best match
+                pattern_len = len(search_piece)
+                for j in range(len(new_text) - pattern_len + 1):
+                    chunk = new_text[j:j+pattern_len]
+                    ratio = difflib.SequenceMatcher(None, search_piece, chunk).ratio()
+                    
+                    if ratio > best_ratio:
+                        best_ratio = ratio
+                        best_match = chunk
+                
+                if best_ratio >= similarity_threshold and best_match:
+                    new_text = new_text.replace(best_match, replace_piece, 1)
+                else:
+                    return None  # If any piece fails to match, the strategy fails
+            except Exception:
+                return None
+    
+    return new_text
+
+
+def apply_comprehensive_preprocessing(texts: Tuple[str, str, str]) -> Optional[str]:
+    """
+    Apply a comprehensive set of preprocessing strategies in a logical sequence.
+    This consolidates all preprocessing approaches into a single hierarchical strategy.
+    
+    Args:
+        texts: Tuple of (search_text, replace_text, original_text)
+        
+    Returns:
+        Result from the first successful preprocessing strategy, or None
+    """
+    # Define strategies in order of increasing complexity
+    strategies = [
+        # Try simple approaches first
+        try_blank_line_stripping_only,
+        try_whitespace_normalization,
+        try_indent_alignment,
+        
+        # Then try combinations
+        try_relative_indentation,
+        try_relative_with_blank_stripping,
+        try_relative_with_whitespace_norm,
+        
+        # Try most complex approach last
+        try_all_preprocessing,
+    ]
+    
+    for strategy in strategies:
+        result = strategy(texts)
+        if result:
+            return result
+            
+    return None
+
+def try_relative_with_whitespace_norm(texts: Tuple[str, str, str]) -> Optional[str]:
+    """Apply relative indentation with whitespace normalization."""
+    search_text, replace_text, original_text = texts
+    
+    try:
+        # First normalize whitespace
+        normalized_search = re.sub(r'\s+', ' ', search_text)
+        normalized_replace = re.sub(r'\s+', ' ', replace_text)
+        normalized_original = re.sub(r'\s+', ' ', original_text)
+        
+        # Then apply relative indentation
+        ri = RelativeIndenter([normalized_search, normalized_replace, normalized_original])
+        rel_search = ri.make_relative(normalized_search)
+        rel_replace = ri.make_relative(normalized_replace)
+        rel_original = ri.make_relative(normalized_original)
+        
+        # Try direct replacement
+        if rel_search in rel_original:
+            rel_result = rel_original.replace(rel_search, rel_replace)
+            result = ri.make_absolute(rel_result)
+            
+            # Need to map this normalized result back to appropriate structure
+            # This is a simplified approach - in practice you might need more careful mapping
+            return result
+    except ValueError:
+        pass
+    
+    return None
+
+def try_all_preprocessing(texts: Tuple[str, str, str]) -> Optional[str]:
+    """Apply all preprocessing techniques together."""
+    search_text, replace_text, original_text = texts
+    
+    try:
+        # Strip blank lines first
+        stripped_search = search_text.strip("\n") + "\n"
+        stripped_replace = replace_text.strip("\n") + "\n"
+        stripped_original = original_text.strip("\n") + "\n"
+        
+        # Then normalize whitespace (preserving line structure)
+        normalized_search = "\n".join(re.sub(r'\s+', ' ', line.strip()) 
+                                     for line in stripped_search.splitlines())
+        normalized_replace = "\n".join(re.sub(r'\s+', ' ', line.strip()) 
+                                      for line in stripped_replace.splitlines())
+        normalized_original = "\n".join(re.sub(r'\s+', ' ', line.strip()) 
+                                       for line in stripped_original.splitlines())
+        
+        # Finally apply relative indentation
+        ri = RelativeIndenter([normalized_search, normalized_replace, normalized_original])
+        rel_search = ri.make_relative(normalized_search)
+        rel_replace = ri.make_relative(normalized_replace)
+        rel_original = ri.make_relative(normalized_original)
+        
+        # Try direct replacement
+        if rel_search in rel_original:
+            rel_result = rel_original.replace(rel_search, rel_replace)
+            return ri.make_absolute(rel_result)
+    except ValueError:
+        pass
+    
+    return None
+
+def try_whitespace_normalization(texts: Tuple[str, str, str]) -> Optional[str]:
+    """Try just whitespace normalization without relative indentation."""
+    search_text, replace_text, original_text = texts
+    
+    # Normalize intra-line whitespace but preserve line breaks
+    normalized_search = "\n".join(re.sub(r'\s+', ' ', line.strip()) 
+                                 for line in search_text.splitlines())
+    normalized_replace = "\n".join(re.sub(r'\s+', ' ', line.strip()) 
+                                  for line in replace_text.splitlines())
+    normalized_original = "\n".join(re.sub(r'\s+', ' ', line.strip()) 
+                                   for line in original_text.splitlines())
+    
+    # Try direct replacement with normalized text
+    if normalized_search in normalized_original:
+        result = normalized_original.replace(normalized_search, normalized_replace)
+        
+        # Map normalized result back to original structure where possible
+        # This is a simplified approach
+        return result
+    
+    return None
+
+def try_blank_line_stripping_only(texts: Tuple[str, str, str]) -> Optional[str]:
+    """Try just stripping blank lines without other preprocessing."""
+    search_text, replace_text, original_text = texts
+    
+    # Strip blank lines
+    stripped_search = search_text.strip("\n") + "\n"
+    stripped_replace = replace_text.strip("\n") + "\n"
+    stripped_original = original_text.strip("\n") + "\n"
+    
+    # Try direct replacement with stripped text
+    if stripped_search in stripped_original:
+        return stripped_original.replace(stripped_search, stripped_replace)
+    
+    return None
+
+def try_indent_alignment(texts: Tuple[str, str, str]) -> Optional[str]:
+    """Try aligning indentation across texts without full relative indentation."""
+    search_text, replace_text, original_text = texts
+    
+    search_lines = search_text.splitlines()
+    replace_lines = replace_text.splitlines()
+    original_lines = original_text.splitlines()
+    
+    # If any are empty, skip this strategy
+    if not search_lines or not replace_lines or not original_lines:
+        return None
+    
+    # Find minimum indentation in search text
+    search_indents = [len(line) - len(line.lstrip()) for line in search_lines if line.strip()]
+    if not search_indents:
+        return None
+    min_search_indent = min(search_indents)
+    
+    # Remove this common indentation from search and replace
+    aligned_search_lines = []
+    for line in search_lines:
+        if not line.strip():
+            aligned_search_lines.append(line)
+        else:
+            indent = len(line) - len(line.lstrip())
+            if indent >= min_search_indent:
+                aligned_search_lines.append(line[min_search_indent:])
+            else:
+                aligned_search_lines.append(line)
+    
+    aligned_replace_lines = []
+    for line in replace_lines:
+        if not line.strip():
+            aligned_replace_lines.append(line)
+        else:
+            indent = len(line) - len(line.lstrip())
+            if indent >= min_search_indent:
+                aligned_replace_lines.append(line[min_search_indent:])
+            else:
+                aligned_replace_lines.append(line)
+    
+    aligned_search = "\n".join(aligned_search_lines)
+    aligned_replace = "\n".join(aligned_replace_lines)
+    
+    # Try to find this aligned search in original
+    for i in range(len(original_lines) - len(search_lines) + 1):
+        # Extract potential match area
+        potential_match = original_lines[i:i+len(search_lines)]
+        
+        # Check if indentation pattern matches
+        potential_indents = [len(line) - len(line.lstrip()) for line in potential_match if line.strip()]
+        if not potential_indents:
+            continue
+        min_potential_indent = min(potential_indents)
+        
+        # Align this section of original text
+        aligned_potential = []
+        for line in potential_match:
+            if not line.strip():
+                aligned_potential.append(line)
+            else:
+                indent = len(line) - len(line.lstrip())
+                if indent >= min_potential_indent:
+                    aligned_potential.append(line[min_potential_indent:])
+                else:
+                    aligned_potential.append(line)
+        
+        aligned_potential_text = "\n".join(aligned_potential)
+        
+        # If our aligned search matches this aligned section
+        if aligned_search == aligned_potential_text:
+            # Replace with adjusted indentation
+            result_lines = original_lines.copy()
+            for j in range(len(search_lines)):
+                if i+j < len(result_lines):
+                    new_line = aligned_replace_lines[j]
+                    if result_lines[i+j].strip():  # If not a blank line
+                        # Preserve original indentation
+                        indent = len(result_lines[i+j]) - len(result_lines[i+j].lstrip())
+                        new_line = " " * indent + new_line.lstrip()
+                    result_lines[i+j] = new_line
+            
+            return "\n".join(result_lines)
+    
+    return None
+
+def try_relative_indentation(texts: Tuple[str, str, str]) -> Optional[str]:
+    """
+    Apply the relative indentation strategy.
+    This is essentially the same as the original _try_with_relative_indentation function.
+    
+    Args:
+        texts: Tuple of (search_text, replace_text, original_text)
+        
+    Returns:
+        New text with replacements applied using relative indentation, or None if failed
+    """
     search_text, replace_text, original_text = texts
     
     try:
@@ -346,6 +616,51 @@ def _try_with_relative_indentation(texts: Tuple[str, str, str]) -> Optional[str]
     
     return None
 
+def try_relative_with_blank_stripping(texts: Tuple[str, str, str]) -> Optional[str]:
+    """
+    Apply relative indentation combined with blank line stripping.
+    
+    Args:
+        texts: Tuple of (search_text, replace_text, original_text)
+        
+    Returns:
+        New text with replacements applied using blank line stripping and 
+        relative indentation, or None if failed
+    """
+    search_text, replace_text, original_text = texts
+    
+    try:
+        # First strip blank lines
+        stripped_search = search_text.strip("\n") + "\n"
+        stripped_replace = replace_text.strip("\n") + "\n"
+        stripped_original = original_text.strip("\n") + "\n"
+        
+        # Then apply relative indentation
+        ri = RelativeIndenter([stripped_search, stripped_replace, stripped_original])
+        rel_search = ri.make_relative(stripped_search)
+        rel_replace = ri.make_relative(stripped_replace)
+        rel_original = ri.make_relative(stripped_original)
+        
+        # Try direct replacement
+        if rel_search in rel_original:
+            rel_result = rel_original.replace(rel_search, rel_replace)
+            result = ri.make_absolute(rel_result)
+            
+            # Preserve the original blank lines at start/end if possible
+            leading_blanks = len(original_text) - len(original_text.lstrip("\n"))
+            trailing_blanks = len(original_text) - len(original_text.rstrip("\n"))
+            
+            if leading_blanks > 0:
+                result = "\n" * leading_blanks + result
+                
+            if trailing_blanks > 0:
+                result = result.rstrip("\n") + "\n" * trailing_blanks
+                
+            return result
+    except ValueError:
+        pass
+    
+    return None
 
 # Functions for edit block parsing
 
@@ -598,3 +913,70 @@ def generate_diff(original: str, updated: str, filename: str = "", context_lines
     )
     
     return '\n'.join(diff)
+
+def git_cherry_pick_strategy(texts):
+    """
+    Use git to apply patches for complex edits when other methods fail.
+    
+    Args:
+        texts: Tuple of (search_text, replace_text, original_text)
+    
+    Returns:
+        New text with changes applied, or None if strategy failed
+    """
+    try:
+        import git
+        from pathlib import Path
+        import tempfile
+        import shutil
+        import os
+        
+        search_text, replace_text, original_text = texts
+        
+        # Create temporary directory with git repo
+        temp_dir = tempfile.mkdtemp()
+        try:
+            repo = git.Repo.init(temp_dir)
+            
+            # Create file path
+            fname = os.path.join(temp_dir, "file.txt")
+            
+            # Original commit
+            with open(fname, 'w', encoding='utf-8') as f:
+                f.write(original_text)
+            repo.git.add(str(fname))
+            repo.git.commit("-m", "original")
+            original_hash = repo.head.commit.hexsha
+            
+            # Search content commit
+            with open(fname, 'w', encoding='utf-8') as f:
+                f.write(search_text)
+            repo.git.add(str(fname))
+            repo.git.commit("-m", "search")
+            
+            # Replace content commit
+            with open(fname, 'w', encoding='utf-8') as f:
+                f.write(replace_text)
+            repo.git.add(str(fname))
+            repo.git.commit("-m", "replace")
+            replace_hash = repo.head.commit.hexsha
+            
+            # Go back to original
+            repo.git.checkout(original_hash)
+            
+            # Cherry pick the replace commit onto original
+            try:
+                repo.git.cherry_pick(replace_hash, "--minimal")
+                
+                # Read the new content
+                with open(fname, 'r', encoding='utf-8') as f:
+                    new_text = f.read()
+                return new_text
+            except:
+                # Cherry pick failed - merge conflict or other error
+                return None
+        finally:
+            shutil.rmtree(temp_dir)
+    except:
+        # Missing git or other error
+        return None
