@@ -48,6 +48,25 @@ pip install git+https://github.com/54yyyu/code-mcp.git
 uv pip install git+https://github.com/54yyyu/code-mcp.git
 ```
 
+### Install with Jupyter Support
+
+To install Code-MCP with Jupyter notebook support:
+
+```bash
+# Install with pip from the jupyter branch
+pip install git+https://github.com/54yyyu/code-mcp.git@jupyter
+
+# Or with uv (recommended)
+uv pip install git+https://github.com/54yyyu/code-mcp.git@jupyter
+```
+
+You can also use the one-line installer that will install from the jupyter branch:
+
+```bash
+# One-line installer for Jupyter-enabled version
+curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/jupyter/install.sh | sh
+```
+
 ### For Developers
 
 If you're developing Code-MCP, clone the repository and install in development mode:
