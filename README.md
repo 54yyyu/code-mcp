@@ -9,6 +9,7 @@ Code-MCP connects Claude AI to your development environment through the Model Co
 - **Git Integration**: Special handling for git commands with safety confirmations
 - **Smart Editing**: Enhanced editing capabilities for code files
 - **Code Analysis**: Advanced pattern matching and function-level operations
+- **Jupyter Integration**: Read, edit, and manage Jupyter notebooks with cell-level operations
 - **Productivity Tools**: Operate on your codebase with natural language instructions
 
 ## Quick Installation
@@ -120,6 +121,15 @@ Note: All new installations automatically use the PATH-based approach.
 - Batch operations across multiple files with `edit_block()`
 - Support for search/replace blocks and unified diff formats
 
+### Jupyter Notebook Support
+
+- Read and display Jupyter notebook contents with `jupyter_read_notebook()`
+- Add new cells (code or markdown) with `jupyter_add_cell()`
+- Edit existing cells with `jupyter_smart_edit_cell()` (using all smart_edit capabilities)
+- Delete cells with `jupyter_delete_cell()`
+- Access notebook content via the `jupyter://path/to/notebook` resource
+- Access specific cells via the `jupyter://path/to/notebook/cell/0` resource
+
 ## Examples
 
 Ask Claude:
@@ -130,6 +140,9 @@ Ask Claude:
 - "Run git status and show me what files have changed"
 - "Make these changes to main.py: replace X with Y"
 - "Update the process_data function in data_utils.py to handle null values"
+- "Read my analysis.ipynb notebook and show me its contents"
+- "Add a new markdown cell to my notebook explaining the data preprocessing steps"
+- "Edit cell 3 in my notebook to fix the bug in the plotting function"
 
 ## Safety Features
 
