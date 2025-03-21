@@ -1,5 +1,14 @@
 # Code-MCP: Terminal and Code Integration for Claude AI
 
+```
+     ██████╗ ██████╗ ██████╗ ███████╗       ███╗   ███╗ ██████╗██████╗ 
+    ██╔════╝██╔═══██╗██╔══██╗██╔════╝       ████╗ ████║██╔════╝██╔══██╗
+    ██║     ██║   ██║██║  ██║█████╗  ████─  ██╔████╔██║██║     ██████╔╝
+    ██║     ██║   ██║██║  ██║██╔══╝         ██║╚██╔╝██║██║     ██╔═══╝ 
+    ╚██████╗╚██████╔╝██████╔╝███████╗       ██║ ╚═╝ ██║╚██████╗██║     
+     ╚═════╝ ╚═════╝ ╚═════╝ ╚══════╝       ╚═╝     ╚═╝ ╚═════╝╚═╝     
+```
+
 Code-MCP connects Claude AI to your development environment through the Model Context Protocol (MCP), enabling terminal commands and file operations through the AI interface.
 
 ## Features
