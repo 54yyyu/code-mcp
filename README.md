@@ -24,6 +24,8 @@ Code-MCP connects Claude AI to your development environment through the Model Co
 
 ## Quick Installation
 
+The following commands install the base version. See the [Optional Features](#optional-features) section for installing with additional capabilities.
+
 ### macOS / Linux
 
 ```bash
@@ -46,6 +48,55 @@ pip install git+https://github.com/54yyyu/code-mcp.git
 
 # Or better, install with uv
 uv pip install git+https://github.com/54yyyu/code-mcp.git
+```
+
+### Optional Features
+
+Code-MCP offers optional feature sets that you can choose to install based on your needs:
+
+#### Remote Connectivity Support
+
+```bash
+# Install with remote connectivity support
+pip install git+https://github.com/54yyyu/code-mcp.git@remote-edit
+
+# Or with uv
+uv pip install git+https://github.com/54yyyu/code-mcp.git@remote-edit
+
+# One-line installer
+curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/remote-edit/install.sh | sh
+```
+
+#### Jupyter Notebook Support
+
+```bash
+# Install with Jupyter notebook support
+pip install git+https://github.com/54yyyu/code-mcp.git@jupyter
+
+# Or with uv
+uv pip install git+https://github.com/54yyyu/code-mcp.git@jupyter
+
+# One-line installer
+curl -LsSf https://raw.githubusercontent.com/54yyyu/code-mcp/jupyter/install.sh | sh
+```
+
+#### Combining Features
+
+To install both Remote Connectivity and Jupyter Notebook support, you can clone the repository and choose which features to include:
+
+```bash
+# Clone the repository
+git clone https://github.com/54yyyu/code-mcp.git
+cd code-mcp
+
+# Create a custom branch with both features
+git checkout main
+git merge remote-edit --no-commit
+git merge jupyter --no-commit
+git commit -m "Custom installation with both remote and jupyter features"
+
+# Install from your custom branch
+pip install -e .
 ```
 
 ### For Developers
